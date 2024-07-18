@@ -387,6 +387,28 @@
             }
         }
     },
+    "rtc6712": {
+        "name": "RTC6712 Single Module",
+        "vrx": {
+            "esp01f": {
+                "product_name": "ESP01F Module",
+                "firmware": "RTC6712_ESP_RX_Backpack",
+                "upload_methods": ["uart", "wifi"],
+                "platform": "esp8285"
+            }
+        }
+    },
+    "rtc6712-diversity": {
+        "name": "RTC6712 Diversity Module",
+        "vrx": {
+            "esp": {
+                "product_name": "ESP01F Module",
+                "firmware": "RTV6712_Diversity_ESP_RX_Backpack",
+                "upload_methods": ["uart", "wifi"],
+                "platform": "esp8285"
+            }
+        }
+    },
     "skyzone": {
         "name": "Skyzone Steadyview",
         "vrx": {

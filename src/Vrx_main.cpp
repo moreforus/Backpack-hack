@@ -40,6 +40,8 @@
   #include "orqa.h"
 #elif defined(AAT_BACKPACK)
   #include "module_aat.h"
+#elif defined(RTC6712_BACKPACK)
+  #include "rtc6712.h"
 #endif
 
 /////////// DEFINES ///////////
@@ -116,6 +118,8 @@ VrxBackpackConfig config;
   Orqa vrxModule;
 #elif defined(AAT_BACKPACK)
   AatModule vrxModule(Serial);
+#elif defined(RTC6712_BACKPACK)
+  RTC6712 vrxModule;
 #endif
 
 /////////// FUNCTION DEFS ///////////
