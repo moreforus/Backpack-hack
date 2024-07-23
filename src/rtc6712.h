@@ -6,7 +6,7 @@
 #define RTC6712_BIT_BANG_FREQ (10000)
 #define RTC6712_FREQ_REF_MHZ (8)
 #define RTC6712_INTERMEDIATE_FREQ (480)
-#define RTC6712_CP_RF (1)
+#define RTC6712_CP_RF (0)
 #define RTC6712_SC_CTRL (1)
 
 const float frequencyTable[48] = {

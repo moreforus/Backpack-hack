@@ -57,17 +57,21 @@ RTC6712::SendIndexCmd(uint8_t index)
     a = int(freq - n * 32);
 
     uint32_t regC;
-    if (inputFreq < 1280)
+    if (inputFreq < 1160)
     {
-        regC = 0xb00ac;
+        regC = 0x10002c;
+    }
+    else if (inputFreq < 1280)
+    {
+        regC = 0x08002c;
     }
     else if (freq < 1360)
     {
-        regC = 0x700ac;
+        regC = 0x04002c;
     }
     else
     {
-        regC = 0x300ac;
+        regC = 0x00002c;
     }
 
     rtc6712WriteRegisters(r, a, n, regC);
