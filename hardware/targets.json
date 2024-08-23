@@ -395,7 +395,13 @@
                 "firmware": "RTC6712_ESP_RX_Backpack",
                 "upload_methods": ["uart", "wifi"],
                 "platform": "esp8285"
-            }
+            },
+            "esp32": {
+                "product_name": "ESP32 Module",
+                "firmware": "RTC6712_ESP32_RX_Backpack",
+                "upload_methods": ["uart", "wifi"],
+                "platform": "espressif32"
+            }            
         }
     },
     "rtc6712-diversity": {
