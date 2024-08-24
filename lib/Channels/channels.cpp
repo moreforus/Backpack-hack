@@ -2,7 +2,7 @@
 
 uint16_t GetFrequency(uint8_t index)
 {
-    if (index >= 0 && index < 48)
+    if (index < MAX_CHANNELS)
         return frequencyTable[index];
     else
         return 0;

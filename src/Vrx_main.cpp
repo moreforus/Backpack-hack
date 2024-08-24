@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <channels.h>
 
 #if defined(PLATFORM_ESP8266)
   #include <espnow.h>
@@ -211,10 +212,10 @@ void ProcessMSPPacket(mspPacket_t *packet)
   {
   case MSP_SET_VTX_CONFIG:
     DBGLN("Processing MSP_SET_VTX_CONFIG...");
-    if (packet->payload[0] < 48) // Standard 48 channel VTx table size e.g. A, B, E, F, R, L
+    if (packet->payload[0] < MAX_CHANNELS) // Standard MAX_CHANNELS channel VTx table size e.g. A, B, E, F, R, L
     {
       // cache changes here, to be handled outside this callback, in the main loop
-      cachedIndex = packet->payload[0];;
+      cachedIndex = packet->payload[0];
       sendChannelChangesToVrx = true;
     }
     else
