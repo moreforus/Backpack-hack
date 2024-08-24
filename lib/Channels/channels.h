@@ -2,7 +2,9 @@
 
 #include <Arduino.h>
 
-const uint16_t frequencyTable[48] = {
+#define MAX_CHANNELS (48)
+
+const uint16_t frequencyTable[MAX_CHANNELS] = {
     5865, 5845, 5825, 5805, 5785, 5765, 5745, 5725, // A
     5733, 5752, 5771, 5790, 5809, 5828, 5847, 5866, // B
     5705, 5685, 5665, 5645, 5885, 5905, 5925, 5945, // E
