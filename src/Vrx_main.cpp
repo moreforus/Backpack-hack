@@ -43,6 +43,8 @@
   #include "module_aat.h"
 #elif defined(RTC6712_BACKPACK)
   #include "rtc6712.h"
+#elif defined(CROSSBOW_BACKPACK)
+  #include "mfd_crossbow.h"
 #endif
 
 /////////// DEFINES ///////////
@@ -121,6 +123,8 @@ VrxBackpackConfig config;
   AatModule vrxModule(Serial);
 #elif defined(RTC6712_BACKPACK)
   RTC6712 vrxModule;
+#elif defined(CROSSBOW_BACKPACK)
+  MFDCrossbow vrxModule(&Serial);
 #endif
 
 /////////// FUNCTION DEFS ///////////
@@ -132,7 +136,7 @@ void SetupEspNow();
 
 /////////////////////////////////////
 
-void RebootIntoWifi()
+void RebootIntoWifi(wifi_service_t service = WIFI_SERVICE_UPDATE)
 {
   DBGLN("Rebooting into wifi update mode...");
   config.SetStartWiFiOnBoot(true);
@@ -238,6 +242,7 @@ void ProcessMSPPacket(mspPacket_t *packet)
     }
     break;
   case MSP_ELRS_SET_OSD:
+    DBGLN("Processing MSP_ELRS_SET_OSD...");
     vrxModule.SetOSD(packet);
     break;
   case MSP_ELRS_BACKPACK_SET_HEAD_TRACKING:
@@ -317,6 +322,7 @@ void SetSoftMACAddress()
     WiFi.setOutputPower(20.5);
   #elif defined(PLATFORM_ESP32)
     WiFi.setTxPower(WIFI_POWER_19_5dBm);
+    esp_wifi_set_protocol(WIFI_IF_STA, WIFI_PROTOCOL_11B | WIFI_PROTOCOL_11G | WIFI_PROTOCOL_11N | WIFI_PROTOCOL_LR);
   #endif
   WiFi.begin("network-name", "pass-to-network", 1);
   WiFi.disconnect();
@@ -331,6 +337,7 @@ void SetSoftMACAddress()
 
 void RequestVTXPacket()
 {
+#if !defined(AAT_BACKPACK) and !defined(CROSSBOW_BACKPACK)
   mspPacket_t packet;
   packet.reset();
   packet.makeCommand();
@@ -339,6 +346,7 @@ void RequestVTXPacket()
 
   blinkLED();
   sendMSPViaEspnow(&packet);
+#endif
 }
 
 void sendMSPViaEspnow(mspPacket_t *packet)
@@ -490,7 +498,7 @@ void loop()
         turnOffLED();
         ESP.restart();
       }
-  #endif 
+  #endif
 
   if (connectionState == wifiUpdate)
   {
