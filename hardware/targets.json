@@ -402,6 +402,12 @@
                 "firmware": "RX5808_HappyModel_EP82_VRX_Backpack",
                 "upload_methods": ["uart", "wifi"],
                 "platform": "esp8285"
+            },
+            "esp32": {
+                "product_name": "ESP32 Module",
+                "firmware": "RX5808_ESP32_Backpack",
+                "upload_methods": ["uart", "wifi"],
+                "platform": "espressif32"
             }
         }
     },

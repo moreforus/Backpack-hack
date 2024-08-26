@@ -25,7 +25,7 @@ static uint32_t rtc6715readRegister(uint8_t readRegister)
     uint32_t buf = readRegister | (RX5808_READ_CTRL_BIT << 4);
     uint32_t registerData = 0;
 
-    uint32_t periodMicroSec = 100;
+    uint32_t periodMicroSec = 1;
 
     digitalWrite(PIN_CS, LOW);
     delayMicroseconds(periodMicroSec);
@@ -34,11 +34,11 @@ static uint32_t rtc6715readRegister(uint8_t readRegister)
     for (uint8_t i = 0; i < RX5808_ADDRESS_R_W_LENGTH; ++i)
     {
         digitalWrite(PIN_CLK, LOW);
-        delayMicroseconds(periodMicroSec / 4);
+        delayMicroseconds(periodMicroSec);
         digitalWrite(PIN_MOSI, buf & 0x01);
-        delayMicroseconds(periodMicroSec / 4);
+        delayMicroseconds(periodMicroSec);
         digitalWrite(PIN_CLK, HIGH);
-        delayMicroseconds(periodMicroSec / 2);
+        delayMicroseconds(periodMicroSec);
 
         buf >>= 1; 
     }
@@ -50,16 +50,16 @@ static uint32_t rtc6715readRegister(uint8_t readRegister)
     for (uint8_t i = 0; i < RX5808_DATA_LENGTH; i++)
     {
         digitalWrite(PIN_CLK, LOW);
-        delayMicroseconds(periodMicroSec / 4);
+        delayMicroseconds(periodMicroSec);
 
         if (digitalRead(PIN_MOSI))
         {
             registerData = registerData | (1 << (5 + i));
         }
 
-        delayMicroseconds(periodMicroSec / 4);
+        delayMicroseconds(periodMicroSec);
         digitalWrite(PIN_CLK, HIGH);
-        delayMicroseconds(periodMicroSec / 2);
+        delayMicroseconds(periodMicroSec);
     }
 
     // Change pin back to output
@@ -74,7 +74,7 @@ static uint32_t rtc6715readRegister(uint8_t readRegister)
 
 static void rtc6715WriteRegister(uint32_t buf)
 {
-    uint32_t periodMicroSec = 100;
+    uint32_t periodMicroSec = 1;
 
     digitalWrite(PIN_CS, LOW);
     #if defined(PIN_CS_2)
@@ -85,11 +85,11 @@ static void rtc6715WriteRegister(uint32_t buf)
     for (uint8_t i = 0; i < RX5808_PACKET_LENGTH; ++i)
     {
         digitalWrite(PIN_CLK, LOW);
-        delayMicroseconds(periodMicroSec / 4);
+        delayMicroseconds(periodMicroSec);
         digitalWrite(PIN_MOSI, buf & 0x01);
-        delayMicroseconds(periodMicroSec / 4);
+        delayMicroseconds(periodMicroSec);
         digitalWrite(PIN_CLK, HIGH);
-        delayMicroseconds(periodMicroSec / 2);
+        delayMicroseconds(periodMicroSec);
 
         buf >>= 1; 
     }
@@ -97,19 +97,22 @@ static void rtc6715WriteRegister(uint32_t buf)
     digitalWrite(PIN_CLK, LOW);
     delayMicroseconds(periodMicroSec);
     digitalWrite(PIN_MOSI, LOW);
+    delayMicroseconds(periodMicroSec);
     digitalWrite(PIN_CLK, LOW);
+    delayMicroseconds(periodMicroSec);
     digitalWrite(PIN_CS, HIGH);
     #if defined(PIN_CS_2)
         digitalWrite(PIN_CS_2, HIGH);
     #endif
+    delayMicroseconds(periodMicroSec);
 }
 
 void rtc6715SetFreq(uint16_t freq)
 {
     uint32_t data = ((((freq - 479) / 2) / 32) << 7) | (((freq - 479) / 2) % 32);
     uint32_t newRegisterData = SYNTHESIZER_REG_B  | (RX5808_WRITE_CTRL_BIT << 4) | (data << 5);
-    uint32_t currentRegisterData = SYNTHESIZER_REG_B | (RX5808_WRITE_CTRL_BIT << 4) | rtc6715readRegister(SYNTHESIZER_REG_B);
-    if (newRegisterData != currentRegisterData)
+    //uint32_t currentRegisterData = SYNTHESIZER_REG_B | (RX5808_WRITE_CTRL_BIT << 4) | rtc6715readRegister(SYNTHESIZER_REG_B);
+    //if (newRegisterData != currentRegisterData)
     {
         rtc6715WriteRegister(SYNTHESIZER_REG_A  | (RX5808_WRITE_CTRL_BIT << 4) | (0x8 << 5));
         rtc6715WriteRegister(newRegisterData);
