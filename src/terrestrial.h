@@ -49,4 +49,5 @@ private:
     uint16_t minScannerFreq;
     uint16_t maxScannerFreq;
     uint16_t scanerDelay = 1;
+    uint8_t scanerStep = 1;
 };

@@ -54,11 +54,11 @@ Terrestrial::SendIndexCmd(uint8_t index)
 WORK_MODE_TYPE
 Terrestrial::ParseSerialCommand()
 {
-    static char buffer[16] = { 0, 0, };
+    static char buffer[20] = { 0, 0, };
     static uint8_t pointer = 0;
 
     // Rxxxx\n -- set receiving on xxxx freq
-    // Sxxxx:yyyy:dddd\n -- set scanner mode from xxxx to yyyy freq with delay dddd ms on each freq
+    // Sxxxx:yyyy:dddd:ii\n -- set scanner mode from [xxxx] to [yyyy] with step [ii] MHz freq with delay [dddd] ms on each freq
     auto data = Serial.read();
     if (data > 0)
     {
@@ -76,15 +76,21 @@ Terrestrial::ParseSerialCommand()
             }
             else if (buffer[0] == 'S')
             {
-                if (pointer >= 9)
+                if (pointer >= 17)
                 {
                     char tmp[5];
                     strncpy(tmp, buffer + 1, 4);
+                    tmp[4] = 0;
                     minScannerFreq = atoi(tmp);
                     strncpy(tmp, buffer + 6, 4);
+                    tmp[4] = 0;
                     maxScannerFreq = atoi(tmp);
                     strncpy(tmp, buffer + 11, 4);
+                    tmp[4] = 0;
                     scanerDelay = atoi(tmp);
+                    strncpy(tmp, buffer + 16, 2);
+                    tmp[2] = 0;
+                    scanerStep  = atoi(tmp);
                     pointer = 0;
 
                     return SCANNER;
@@ -192,7 +198,7 @@ Terrestrial::Loop(uint32_t now)
                 {
                     Serial.printf("S:%d[%d:%d]%d>%llu", currentFreq, rssiA, rssiB, currentAntenna, us);
                     Serial.println();
-                    ++currentFreq;
+                    currentFreq += scanerStep;
                     if (currentFreq > maxScannerFreq)
                     {
                         currentFreq = minScannerFreq;
