@@ -48,4 +48,5 @@ private:
     SCANNER_AUTO_TYPE scannerAuto;
     uint16_t minScannerFreq;
     uint16_t maxScannerFreq;
+    uint16_t scanerDelay = 1;
 };

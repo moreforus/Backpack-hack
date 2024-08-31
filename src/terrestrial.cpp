@@ -38,15 +38,16 @@ Terrestrial::EnableSPIMode()
 void
 Terrestrial::SendIndexCmd(uint8_t index)
 {
+    DBG("Setting index ");
+    DBGLN("%x", index);
+
+    currentFreq = frequencyTable[index];
+
     if (!SPIModeEnabled) 
     {
         EnableSPIMode();
     }
 
-    DBG("Setting index ");
-    DBGLN("%x", index);
-
-    currentFreq = frequencyTable[index];
     rtc6715SetFreq(currentFreq);
 }
 
@@ -57,7 +58,7 @@ Terrestrial::ParseSerialCommand()
     static uint8_t pointer = 0;
 
     // Rxxxx\n -- set receiving on xxxx freq
-    // Sxxxx:yyyy\n -- set scanner mode from xxxx to yyyy freq
+    // Sxxxx:yyyy:dddd\n -- set scanner mode from xxxx to yyyy freq with delay dddd ms on each freq
     auto data = Serial.read();
     if (data > 0)
     {
@@ -82,6 +83,8 @@ Terrestrial::ParseSerialCommand()
                     minScannerFreq = atoi(tmp);
                     strncpy(tmp, buffer + 6, 4);
                     maxScannerFreq = atoi(tmp);
+                    strncpy(tmp, buffer + 11, 4);
+                    scanerDelay = atoi(tmp);
                     pointer = 0;
 
                     return SCANNER;
@@ -129,11 +132,11 @@ Terrestrial::Loop(uint32_t now)
         else if (workMode == RECEIVER)
         {
             if (!SPIModeEnabled) 
-                {
-                    EnableSPIMode();
-                }
+            {
+                EnableSPIMode();
+            }
 
-                rtc6715SetFreq(currentFreq);
+            rtc6715SetFreq(currentFreq);
         }
     }
 
@@ -177,7 +180,7 @@ Terrestrial::Loop(uint32_t now)
                 {
                     preNow = now;
                     ++delay;
-                    if (delay == 1000)
+                    if (delay == scanerDelay)
                     {
                         scannerAuto = MEASURE;
                     }
