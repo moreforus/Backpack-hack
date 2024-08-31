@@ -422,6 +422,17 @@
             }
         }
     },
+    "terrestrial": {
+        "name": "Terrestrial Diversity Module",
+        "vrx": {
+            "esp32": {
+                "product_name": "ESP32 Module",
+                "firmware": "TERRESTRIAL_ESP32_Backpack",
+                "upload_methods": ["uart", "wifi"],
+                "platform": "espressif32"
+            }
+        }
+    },
     "rtc6712": {
         "name": "RTC6712 Single Module",
         "vrx": {

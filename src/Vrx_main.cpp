@@ -45,6 +45,8 @@
   #include "rtc6712.h"
 #elif defined(CROSSBOW_BACKPACK)
   #include "mfd_crossbow.h"
+#elif defined(TERRESTRIAL_BACKPACK)
+  #include "terrestrial.h"
 #endif
 
 /////////// DEFINES ///////////
@@ -125,6 +127,8 @@ VrxBackpackConfig config;
   RTC6712 vrxModule;
 #elif defined(CROSSBOW_BACKPACK)
   MFDCrossbow vrxModule(&Serial);
+#elif defined(TERRESTRIAL_BACKPACK)
+  Terrestrial vrxModule;
 #endif
 
 /////////// FUNCTION DEFS ///////////
