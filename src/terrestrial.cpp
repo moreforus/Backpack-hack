@@ -12,16 +12,11 @@ Terrestrial::Init()
     pinMode(PIN_CLK, INPUT);
     pinMode(PIN_CS, INPUT);
 
-    #if defined(PIN_CS_2)
-        pinMode(PIN_CS_2, INPUT);
-    #endif
-
-#if defined(VIDEO_CTRL)
     pinMode(VIDEO_CTRL, OUTPUT);
-#endif
 
     DBGLN("Terrestrial init complete");
-    //Serial.begin(115200);
+    Serial.begin(460800);
+    Serial.setTimeout(1);
 }
 
 void
@@ -34,11 +29,6 @@ Terrestrial::EnableSPIMode()
     digitalWrite(PIN_MOSI, LOW);
     digitalWrite(PIN_CLK, LOW);
     digitalWrite(PIN_CS, HIGH);
-
-    #if defined(PIN_CS_2)
-        pinMode(PIN_CS_2, OUTPUT);
-        digitalWrite(PIN_CS_2, HIGH);
-    #endif
 
     SPIModeEnabled = true;
 
@@ -56,49 +46,188 @@ Terrestrial::SendIndexCmd(uint8_t index)
     DBG("Setting index ");
     DBGLN("%x", index);
 
-    uint16_t f = frequencyTable[index];
-    rtc6715SetFreq(f);
+    currentFreq = frequencyTable[index];
+    rtc6715SetFreq(currentFreq);
+}
+
+WORK_MODE_TYPE
+Terrestrial::ParseSerialCommand()
+{
+    static char buffer[16] = { 0, 0, };
+    static uint8_t pointer = 0;
+
+    // Rxxxx\n -- set receiving on xxxx freq
+    // Sxxxx:yyyy\n -- set scanner mode from xxxx to yyyy freq
+    auto data = Serial.read();
+    if (data > 0)
+    {
+        if ((data == '\n' || data == '\r') && pointer)
+        {
+            if (buffer[0] == 'R')
+            {
+                if (pointer >= 4)
+                {
+                    currentFreq = atoi(buffer + 1);
+                    pointer = 0;
+
+                    return RECEIVER;
+                }
+            }
+            else if (buffer[0] == 'S')
+            {
+                if (pointer >= 9)
+                {
+                    char tmp[5];
+                    strncpy(tmp, buffer + 1, 4);
+                    minScannerFreq = atoi(tmp);
+                    strncpy(tmp, buffer + 6, 4);
+                    maxScannerFreq = atoi(tmp);
+                    pointer = 0;
+
+                    return SCANNER;
+                }
+            }
+            else
+            {
+                pointer = 0;
+            }
+        }
+
+        // check the first byte. It must be a command
+        if (pointer == 0)
+        {
+            if (data != 'S' && data != 'R')
+            {
+                return NONE;
+            }
+        }
+
+        buffer[pointer] = data;
+        ++pointer;
+    }
+    
+    return NONE;
 }
 
 void 
 Terrestrial::Loop(uint32_t now)
 {
+    static uint16_t delay = 0;
+    static uint32_t preNow = 0;
+
     ModuleBase::Loop(now);
-#ifdef RSSI_A
-    ANTENNA_TYPE antenna = CheckRSSI(now);
-    if (antenna != currentAntenna)
+
+    auto mode = ParseSerialCommand();
+    if (mode != NONE)
     {
-        currentAntenna = antenna;
-        SwitchVideo(currentAntenna);
+        workMode = mode;
+        if (workMode == SCANNER)
+        {
+            // restart scanning process.
+            scannerAuto = INIT;
+        }
+        else if (workMode == RECEIVER)
+        {
+            if (!SPIModeEnabled) 
+                {
+                    EnableSPIMode();
+                }
+
+                rtc6715SetFreq(currentFreq);
+        }
     }
-#endif
+
+    uint64_t us = micros();
+    if (workMode == RECEIVER)
+    {
+        ANTENNA_TYPE antenna = ANT_A;
+        if (CheckRSSI(now, antenna))
+        {
+            if (antenna != currentAntenna)
+            {
+                currentAntenna = antenna;
+                SwitchVideo(currentAntenna);
+            }
+
+            Serial.printf("R:%d[%d:%d]%d>%llu", currentFreq, rssiA, rssiB, currentAntenna, us);
+            Serial.println();
+        }
+    }
+    else if (workMode == SCANNER)
+    {
+        switch (scannerAuto)
+        {
+            case INIT:
+                currentFreq = minScannerFreq;
+                scannerAuto = SET_FREQ;
+            break;
+            case SET_FREQ:
+                if (!SPIModeEnabled) 
+                {
+                    EnableSPIMode();
+                }
+
+                rtc6715SetFreq(currentFreq);
+                delay = 0;
+                preNow = now;
+                scannerAuto = DELAY;
+            break;
+            case DELAY:
+                if (now - preNow > 0)
+                {
+                    preNow = now;
+                    ++delay;
+                    if (delay == 1000)
+                    {
+                        scannerAuto = MEASURE;
+                    }
+                }
+            break;
+            case MEASURE:
+                ANTENNA_TYPE antenna = ANT_A;
+                if (CheckRSSI(now, antenna))
+                {
+                    Serial.printf("S:%d[%d:%d]%d>%llu", currentFreq, rssiA, rssiB, currentAntenna, us);
+                    Serial.println();
+                    ++currentFreq;
+                    if (currentFreq > maxScannerFreq)
+                    {
+                        currentFreq = minScannerFreq;
+                    }
+
+                    scannerAuto = SET_FREQ;
+                }
+            break;
+        }
+    }
 }
 
 #define RSSI_FILTER (8)
 #define RSSI_DIFF_BORDER (16)
 
-ANTENNA_TYPE 
-Terrestrial::CheckRSSI(uint32_t now)
+bool 
+Terrestrial::CheckRSSI(uint32_t now, ANTENNA_TYPE& antenna)
 {
     static uint8_t filter = RSSI_FILTER;
-    ANTENNA_TYPE antenna = currentAntenna;
+    static uint16_t rssiASum = 0;
+    static uint16_t rssiBSum = 0;
 
     if (now - currentTimeMs < 1)
     {
-        return antenna;
+        return false;
     }
 
     currentTimeMs = now;
 
     analogRead(RSSI_A);
-    rssiA += analogRead(RSSI_A);
+    rssiASum += analogRead(RSSI_A);
     
     analogRead(RSSI_B);
-    rssiB += analogRead(RSSI_B);
+    rssiBSum += analogRead(RSSI_B);
     if (--filter == 0)
     {
-        rssiA /= RSSI_FILTER;
-        rssiB /= RSSI_FILTER;
+        rssiA = rssiASum / RSSI_FILTER;
+        rssiB = rssiBSum / RSSI_FILTER;
 
         if (rssiA - rssiB > RSSI_DIFF_BORDER)
         {
@@ -109,15 +238,14 @@ Terrestrial::CheckRSSI(uint32_t now)
             antenna = ANT_B;
         }
 
-        //Serial.printf("%d %d %d", rssiA, rssiB, antenna);
-        //Serial.println();
-
-        rssiA = 0;
-        rssiB = 0;
+        rssiASum = 0;
+        rssiBSum = 0;
         filter = RSSI_FILTER;
+
+        return true;
     }
  
-    return antenna;
+    return false;
 }
 
 void
