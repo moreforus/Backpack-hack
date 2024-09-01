@@ -147,12 +147,10 @@ std::string
 Terrestrial::MakeMessage(const char* cmd)
 {
     uint64_t us = micros();
-    std::string a(cmd);
-    a += ":" + std::to_string(currentFreq);
-    a += "[" + std::to_string(rssiA);
-    a += ":" + std::to_string(rssiB);
-    a += "]" + std::to_string(currentAntenna);
-    a += ">" + std::to_string(us);
+    char str[48];
+    sprintf(str, "%s:%d[%d:%d]%d>%llu", cmd, currentFreq, rssiA, rssiB, currentAntenna, us);
+    
+    return str;
 }
 
 void
