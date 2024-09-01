@@ -3,6 +3,8 @@
 #include "module_base.h"
 #include <Arduino.h>
 #include <channels.h>
+#include <string>
+#include <vector>
 
 enum ANTENNA_TYPE : uint8_t
 {
@@ -37,6 +39,10 @@ private:
     bool CheckRSSI(uint32_t now, ANTENNA_TYPE& antenna);
     void SwitchVideo(ANTENNA_TYPE antenna);
     WORK_MODE_TYPE ParseSerialCommand();
+    void SetWorkMode(WORK_MODE_TYPE mode);
+    void Work(uint32_t now);
+    void SendMessage();
+    std::string MakeMessage(const char* cmd);
 
     bool SPIModeEnabled = false;
     ANTENNA_TYPE currentAntenna = ANT_A;
@@ -50,4 +56,5 @@ private:
     uint16_t maxScannerFreq;
     uint16_t scanerDelay = 1;
     uint8_t scanerStep = 1;
+    std::vector<std::string> messageQueue;
 };

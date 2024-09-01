@@ -118,35 +118,49 @@ Terrestrial::ParseSerialCommand()
     return NONE;
 }
 
-void 
-Terrestrial::Loop(uint32_t now)
+void
+Terrestrial::SetWorkMode(WORK_MODE_TYPE mode)
+{
+    if (mode == NONE)
+    {
+        return;
+    }
+    
+    workMode = mode;
+    if (workMode == SCANNER)
+    {
+        // restart scanning process.
+        scannerAuto = INIT;
+    }
+    else if (workMode == RECEIVER)
+    {
+        if (!SPIModeEnabled) 
+        {
+            EnableSPIMode();
+        }
+
+        rtc6715SetFreq(currentFreq);
+    }
+}
+
+std::string
+Terrestrial::MakeMessage(const char* cmd)
+{
+    uint64_t us = micros();
+    std::string a(cmd);
+    a += ":" + std::to_string(currentFreq);
+    a += "[" + std::to_string(rssiA);
+    a += ":" + std::to_string(rssiB);
+    a += "]" + std::to_string(currentAntenna);
+    a += ">" + std::to_string(us);
+}
+
+void
+Terrestrial::Work(uint32_t now)
 {
     static uint16_t delay = 0;
     static uint32_t preNow = 0;
 
-    ModuleBase::Loop(now);
-
-    auto mode = ParseSerialCommand();
-    if (mode != NONE)
-    {
-        workMode = mode;
-        if (workMode == SCANNER)
-        {
-            // restart scanning process.
-            scannerAuto = INIT;
-        }
-        else if (workMode == RECEIVER)
-        {
-            if (!SPIModeEnabled) 
-            {
-                EnableSPIMode();
-            }
-
-            rtc6715SetFreq(currentFreq);
-        }
-    }
-
-    uint64_t us = micros();
     if (workMode == RECEIVER)
     {
         ANTENNA_TYPE antenna = ANT_A;
@@ -158,8 +172,8 @@ Terrestrial::Loop(uint32_t now)
                 SwitchVideo(currentAntenna);
             }
 
-            Serial.printf("R:%d[%d:%d]%d>%llu", currentFreq, rssiA, rssiB, currentAntenna, us);
-            Serial.println();
+            auto message = MakeMessage("R");
+            messageQueue.push_back(message);
         }
     }
     else if (workMode == SCANNER)
@@ -196,8 +210,9 @@ Terrestrial::Loop(uint32_t now)
                 ANTENNA_TYPE antenna = ANT_A;
                 if (CheckRSSI(now, antenna))
                 {
-                    Serial.printf("S:%d[%d:%d]%d>%llu", currentFreq, rssiA, rssiB, currentAntenna, us);
-                    Serial.println();
+                    auto message = MakeMessage("S");
+                    messageQueue.push_back(message);
+
                     currentFreq += scanerStep;
                     if (currentFreq > maxScannerFreq)
                     {
@@ -209,6 +224,30 @@ Terrestrial::Loop(uint32_t now)
             break;
         }
     }
+}
+
+void
+Terrestrial::SendMessage()
+{
+    if (messageQueue.size() > 0)
+    {
+        auto tmp = messageQueue.front();
+        messageQueue.erase(messageQueue.begin());
+        Serial.println(tmp.c_str());
+    }
+}
+
+void 
+Terrestrial::Loop(uint32_t now)
+{
+    ModuleBase::Loop(now);
+
+    auto mode = ParseSerialCommand();
+    SetWorkMode(mode);
+    
+    Work(now);
+
+    SendMessage();
 }
 
 #define RSSI_FILTER (8)
