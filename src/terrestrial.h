@@ -23,7 +23,6 @@ enum SCANNER_AUTO_TYPE : uint8_t
 {
     INIT = 0,
     SET_FREQ,
-    DELAY,
     MEASURE,
 };
 
@@ -36,7 +35,7 @@ public:
 
 private:
     void EnableSPIMode();
-    bool CheckRSSI(uint32_t now, ANTENNA_TYPE& antenna);
+    bool CheckRSSI(uint32_t now, ANTENNA_TYPE& antenna, uint16_t filterInitCounter);
     void SwitchVideo(ANTENNA_TYPE antenna);
     WORK_MODE_TYPE ParseSerialCommand();
     void SetWorkMode(WORK_MODE_TYPE mode);
@@ -54,7 +53,7 @@ private:
     SCANNER_AUTO_TYPE scannerAuto;
     uint16_t minScannerFreq;
     uint16_t maxScannerFreq;
-    uint16_t scanerDelay = 1;
+    uint16_t scanerFilter = 1;
     uint8_t scanerStep = 1;
     std::vector<std::string> messageQueue;
 };

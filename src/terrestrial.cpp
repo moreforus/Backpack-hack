@@ -87,7 +87,7 @@ Terrestrial::ParseSerialCommand()
                     maxScannerFreq = atoi(tmp);
                     strncpy(tmp, buffer + 11, 4);
                     tmp[4] = 0;
-                    scanerDelay = atoi(tmp);
+                    scanerFilter = atoi(tmp);
                     strncpy(tmp, buffer + 16, 2);
                     tmp[2] = 0;
                     scanerStep  = atoi(tmp);
@@ -153,16 +153,15 @@ Terrestrial::MakeMessage(const char* cmd)
     return str;
 }
 
+#define DEFAULT_RECEIVER_FILTER (8)
+
 void
 Terrestrial::Work(uint32_t now)
 {
-    static uint16_t delay = 0;
-    static uint32_t preNow = 0;
-
     if (workMode == RECEIVER)
     {
         ANTENNA_TYPE antenna = ANT_A;
-        if (CheckRSSI(now, antenna))
+        if (CheckRSSI(now, antenna, DEFAULT_RECEIVER_FILTER))
         {
             if (antenna != currentAntenna)
             {
@@ -189,24 +188,12 @@ Terrestrial::Work(uint32_t now)
                 }
 
                 rtc6715SetFreq(currentFreq);
-                delay = 0;
-                preNow = now;
-                scannerAuto = DELAY;
+                scannerAuto = MEASURE;
             break;
-            case DELAY:
-                if (now - preNow > 0)
-                {
-                    preNow = now;
-                    ++delay;
-                    if (delay == scanerDelay)
-                    {
-                        scannerAuto = MEASURE;
-                    }
-                }
-            break;
+
             case MEASURE:
                 ANTENNA_TYPE antenna = ANT_A;
-                if (CheckRSSI(now, antenna))
+                if (CheckRSSI(now, antenna, scanerFilter))
                 {
                     auto message = MakeMessage("S");
                     messageQueue.push_back(message);
@@ -248,20 +235,22 @@ Terrestrial::Loop(uint32_t now)
     SendMessage();
 }
 
-#define RSSI_FILTER (8)
+
 #define RSSI_DIFF_BORDER (16)
 
 bool 
-Terrestrial::CheckRSSI(uint32_t now, ANTENNA_TYPE& antenna)
+Terrestrial::CheckRSSI(uint32_t now, ANTENNA_TYPE& antenna, uint16_t filterInitCounter)
 {
-    static uint8_t filter = RSSI_FILTER;
-    static uint16_t rssiASum = 0;
-    static uint16_t rssiBSum = 0;
+    static uint16_t filter = 0;
+    static uint32_t rssiASum = 0;
+    static uint32_t rssiBSum = 0;
 
     if (now - currentTimeMs < 1)
     {
         return false;
     }
+
+    if (filter == 0) filter = filterInitCounter;
 
     currentTimeMs = now;
 
@@ -272,8 +261,8 @@ Terrestrial::CheckRSSI(uint32_t now, ANTENNA_TYPE& antenna)
     rssiBSum += analogRead(RSSI_B);
     if (--filter == 0)
     {
-        rssiA = rssiASum / RSSI_FILTER;
-        rssiB = rssiBSum / RSSI_FILTER;
+        rssiA = rssiASum / filterInitCounter;
+        rssiB = rssiBSum / filterInitCounter;
 
         if (rssiA - rssiB > RSSI_DIFF_BORDER)
         {
@@ -286,7 +275,6 @@ Terrestrial::CheckRSSI(uint32_t now, ANTENNA_TYPE& antenna)
 
         rssiASum = 0;
         rssiBSum = 0;
-        filter = RSSI_FILTER;
 
         return true;
     }
