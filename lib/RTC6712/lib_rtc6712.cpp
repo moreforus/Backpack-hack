@@ -15,7 +15,7 @@ enum RegAddrType : uint8_t {
 
 void rtc6712WriteRegister(uint32_t data)
 {    
-    uint32_t periodMicroSec = 1000000 / RTC6712_BIT_BANG_FREQ;
+    uint32_t periodMicroSec = 1;
     
     digitalWrite(PIN_1G2_CS, LOW);
     delayMicroseconds(periodMicroSec);
@@ -23,11 +23,11 @@ void rtc6712WriteRegister(uint32_t data)
     for (uint8_t i = 0; i < 24; ++i)
     {
         digitalWrite(PIN_CLK, LOW);
-        delayMicroseconds(periodMicroSec / 4);
+        delayMicroseconds(periodMicroSec);
         digitalWrite(PIN_MOSI, (data & 0x800000) ? HIGH : LOW );
-        delayMicroseconds(periodMicroSec / 4);
+        delayMicroseconds(periodMicroSec);
         digitalWrite(PIN_CLK, HIGH);
-        delayMicroseconds(periodMicroSec / 2);
+        delayMicroseconds(periodMicroSec);
 
         data <<= 1;
     }

@@ -53,7 +53,7 @@ public:
         _worker(_scanerFreq);
     }
 
-    bool CheckRSSI(uint32_t now, ANTENNA_TYPE& antenna, uint16_t filterInitCounter)
+    bool MeasureRSSI(uint32_t now, uint16_t filterInitCounter)
     {
         if (now - _currentTimeMs < 1)
         {
@@ -76,16 +76,15 @@ public:
 
             if (_rssiA - _rssiB > RSSI_DIFF_BORDER)
             {
-                antenna = ANT_A;
+                _currentAntenna = ANT_A;
             }
             else if (_rssiB - _rssiA > RSSI_DIFF_BORDER)
             {
-                antenna = ANT_B;
+                _currentAntenna = ANT_B;
             }
 
             _rssiASum = 0;
             _rssiBSum = 0;
-            _currentAntenna = antenna;
 
             return true;
         }

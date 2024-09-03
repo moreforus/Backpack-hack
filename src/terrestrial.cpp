@@ -260,7 +260,7 @@ Terrestrial::Work(uint32_t now)
 
             case MEASURE:
                 ANTENNA_TYPE antenna = ANT_A;
-                if (_scaner1G2->CheckRSSI(now, antenna, _scanerFilter))
+                if (_scaner1G2->MeasureRSSI(now, _scanerFilter))
                 {
                     auto message = _scaner1G2->MakeMessage();
                     messageQueue.push_back(message);
@@ -269,7 +269,7 @@ Terrestrial::Work(uint32_t now)
                     scannerAuto = SET_FREQ;
                 }
 
-                if (_scaner5G8->CheckRSSI(now, antenna, _scanerFilter))
+                if (_scaner5G8->MeasureRSSI(now, _scanerFilter))
                 {
                     auto message = _scaner5G8->MakeMessage();
                     messageQueue.push_back(message);
