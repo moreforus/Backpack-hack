@@ -27,7 +27,7 @@ static uint32_t rtc6715readRegister(uint8_t readRegister)
 
     uint32_t periodMicroSec = 1;
 
-    digitalWrite(PIN_CS, LOW);
+    digitalWrite(PIN_5G8_CS, LOW);
     delayMicroseconds(periodMicroSec);
 
     // Write register address and read bit
@@ -67,7 +67,7 @@ static uint32_t rtc6715readRegister(uint8_t readRegister)
 
     digitalWrite(PIN_MOSI, LOW);
     digitalWrite(PIN_CLK, LOW);
-    digitalWrite(PIN_CS, HIGH);
+    digitalWrite(PIN_5G8_CS, HIGH);
 
     return registerData;
 }
@@ -76,7 +76,7 @@ static void rtc6715WriteRegister(uint32_t buf)
 {
     uint32_t periodMicroSec = 1;
 
-    digitalWrite(PIN_CS, LOW);
+    digitalWrite(PIN_5G8_CS, LOW);
     #if defined(PIN_CS_2)
         digitalWrite(PIN_CS_2, LOW);
     #endif
@@ -100,7 +100,7 @@ static void rtc6715WriteRegister(uint32_t buf)
     delayMicroseconds(periodMicroSec);
     digitalWrite(PIN_CLK, LOW);
     delayMicroseconds(periodMicroSec);
-    digitalWrite(PIN_CS, HIGH);
+    digitalWrite(PIN_5G8_CS, HIGH);
     #if defined(PIN_CS_2)
         digitalWrite(PIN_CS_2, HIGH);
     #endif

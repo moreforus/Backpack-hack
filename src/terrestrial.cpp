@@ -2,21 +2,26 @@
 #include <SPI.h>
 #include "logging.h"
 #include <rtc6715.h>
+#include <lib_rtc6712.h>
 
 void
 Terrestrial::Init()
 {
     ModuleBase::Init();
     
+    // common MOSI and CLK pins
     pinMode(PIN_MOSI, INPUT);
     pinMode(PIN_CLK, INPUT);
-    pinMode(PIN_CS, INPUT);
-
+    pinMode(PIN_5G8_CS, INPUT);
+    pinMode(PIN_1G2_CS, INPUT);
     pinMode(VIDEO_CTRL, OUTPUT);
 
     DBGLN("Terrestrial init complete");
     Serial.begin(460800);
     Serial.setTimeout(1);
+
+    _scaner1G2 = new Scaner(rtc6712SetFreq, RSSI_1G2_A, RSSI_1G2_B);
+    _scaner5G8 = new Scaner(rtc6715SetFreq, RSSI_5G8_A, RSSI_5G8_B);
 }
 
 void
@@ -24,15 +29,36 @@ Terrestrial::EnableSPIMode()
 {
     pinMode(PIN_MOSI, OUTPUT);
     pinMode(PIN_CLK, OUTPUT);
-    pinMode(PIN_CS, OUTPUT);
+    pinMode(PIN_5G8_CS, OUTPUT);
+    pinMode(PIN_1G2_CS, OUTPUT);
     
     digitalWrite(PIN_MOSI, LOW);
     digitalWrite(PIN_CLK, LOW);
-    digitalWrite(PIN_CS, HIGH);
+    digitalWrite(PIN_5G8_CS, HIGH);
+    digitalWrite(PIN_1G2_CS, HIGH);
 
     SPIModeEnabled = true;
 
     DBGLN("SPI config complete");
+}
+
+#define MIN_1G2_FREQ (500)
+#define MAX_1G2_FREQ (2500)
+
+#define MIN_5G8_FREQ (4900)
+#define MAX_5G8_FREQ (6000)
+
+void
+Terrestrial::SetFreq(uint16_t freq)
+{
+    if (freq >= MIN_5G8_FREQ)
+    {
+        rtc6715SetFreq(freq);
+    }
+    else if (freq < MAX_1G2_FREQ)
+    {
+        rtc6712SetFreq(freq);
+    }
 }
 
 void
@@ -42,13 +68,12 @@ Terrestrial::SendIndexCmd(uint8_t index)
     DBGLN("%x", index);
 
     currentFreq = frequencyTable[index];
-
     if (!SPIModeEnabled) 
     {
         EnableSPIMode();
     }
 
-    rtc6715SetFreq(currentFreq);
+    SetFreq(currentFreq);
 }
 
 WORK_MODE_TYPE
@@ -81,17 +106,55 @@ Terrestrial::ParseSerialCommand()
                     char tmp[5];
                     strncpy(tmp, buffer + 1, 4);
                     tmp[4] = 0;
-                    minScannerFreq = atoi(tmp);
+                    uint16_t minFreq = atoi(tmp);
                     strncpy(tmp, buffer + 6, 4);
                     tmp[4] = 0;
-                    maxScannerFreq = atoi(tmp);
+                    uint16_t maxFreq = atoi(tmp);
                     strncpy(tmp, buffer + 11, 4);
                     tmp[4] = 0;
-                    scanerFilter = atoi(tmp);
+                    _scanerFilter = atoi(tmp);
                     strncpy(tmp, buffer + 16, 2);
                     tmp[2] = 0;
-                    scanerStep  = atoi(tmp);
+                    _scanerStep  = atoi(tmp);
                     pointer = 0;
+
+
+                    if (minFreq > maxFreq)
+                    {
+                        std::swap(minFreq, maxFreq);
+                    }
+
+                    minScaner1G2Freq = 0;
+                    maxScaner1G2Freq = 0;
+                    minScaner5G8Freq = 0;
+                    maxScaner5G8Freq = 0;
+                    if (minFreq <= MAX_1G2_FREQ)
+                    {
+                        minScaner1G2Freq = minFreq;
+                        maxScaner1G2Freq = MAX_1G2_FREQ;
+
+                        if (maxFreq > MIN_5G8_FREQ)
+                        {
+                            minScaner5G8Freq = MIN_5G8_FREQ;
+                            maxScaner5G8Freq = MAX_5G8_FREQ;
+                        }
+                    }
+
+                    if (maxFreq <= MAX_1G2_FREQ)
+                    {
+                        maxScaner1G2Freq = maxFreq;
+                    }
+
+                    if (minFreq >= MIN_5G8_FREQ && minFreq <= MAX_5G8_FREQ)
+                    {
+                        minScaner5G8Freq = minFreq;
+                        maxScaner5G8Freq = MAX_5G8_FREQ;
+                    }
+
+                    if (maxFreq >= MIN_5G8_FREQ && maxFreq <= MAX_5G8_FREQ)
+                    {
+                        maxScaner5G8Freq = maxFreq;
+                    }
 
                     return SCANNER;
                 }
@@ -139,16 +202,16 @@ Terrestrial::SetWorkMode(WORK_MODE_TYPE mode)
             EnableSPIMode();
         }
 
-        rtc6715SetFreq(currentFreq);
+        SetFreq(currentFreq);
     }
 }
 
 std::string
-Terrestrial::MakeMessage(const char* cmd)
+Terrestrial::MakeMessage(const char* cmd, const uint16_t freq)
 {
     uint64_t us = micros();
     char str[48];
-    sprintf(str, "%s:%d[%d:%d]%d>%llu", cmd, currentFreq, rssiA, rssiB, currentAntenna, us);
+    sprintf(str, "%s:%d[%d:%d]%d>%llu", cmd, freq, rssiA, rssiB, currentAntenna, us);
     
     return str;
 }
@@ -169,7 +232,7 @@ Terrestrial::Work(uint32_t now)
                 SwitchVideo(currentAntenna);
             }
 
-            auto message = MakeMessage("R");
+            auto message = MakeMessage("R", currentFreq);
             messageQueue.push_back(message);
         }
     }
@@ -178,7 +241,9 @@ Terrestrial::Work(uint32_t now)
         switch (scannerAuto)
         {
             case INIT:
-                currentFreq = minScannerFreq;
+                _scaner1G2->Init(minScaner1G2Freq, maxScaner1G2Freq);
+                _scaner5G8->Init(minScaner5G8Freq, maxScaner5G8Freq);
+
                 scannerAuto = SET_FREQ;
             break;
             case SET_FREQ:
@@ -187,22 +252,28 @@ Terrestrial::Work(uint32_t now)
                     EnableSPIMode();
                 }
 
-                rtc6715SetFreq(currentFreq);
+                _scaner1G2->SetFreq();
+                _scaner5G8->SetFreq();
+
                 scannerAuto = MEASURE;
             break;
 
             case MEASURE:
                 ANTENNA_TYPE antenna = ANT_A;
-                if (CheckRSSI(now, antenna, scanerFilter))
+                if (_scaner1G2->CheckRSSI(now, antenna, _scanerFilter))
                 {
-                    auto message = MakeMessage("S");
+                    auto message = _scaner1G2->MakeMessage();
                     messageQueue.push_back(message);
+                    _scaner1G2->IncrementFreq(_scanerStep);
 
-                    currentFreq += scanerStep;
-                    if (currentFreq > maxScannerFreq)
-                    {
-                        currentFreq = minScannerFreq;
-                    }
+                    scannerAuto = SET_FREQ;
+                }
+
+                if (_scaner5G8->CheckRSSI(now, antenna, _scanerFilter))
+                {
+                    auto message = _scaner5G8->MakeMessage();
+                    messageQueue.push_back(message);
+                    _scaner5G8->IncrementFreq(_scanerStep);
 
                     scannerAuto = SET_FREQ;
                 }
@@ -235,9 +306,6 @@ Terrestrial::Loop(uint32_t now)
     SendMessage();
 }
 
-
-#define RSSI_DIFF_BORDER (16)
-
 bool 
 Terrestrial::CheckRSSI(uint32_t now, ANTENNA_TYPE& antenna, uint16_t filterInitCounter)
 {
@@ -254,11 +322,11 @@ Terrestrial::CheckRSSI(uint32_t now, ANTENNA_TYPE& antenna, uint16_t filterInitC
 
     currentTimeMs = now;
 
-    analogRead(RSSI_A);
-    rssiASum += analogRead(RSSI_A);
+    analogRead(RSSI_5G8_A);
+    rssiASum += analogRead(RSSI_5G8_A);
     
-    analogRead(RSSI_B);
-    rssiBSum += analogRead(RSSI_B);
+    analogRead(RSSI_5G8_B);
+    rssiBSum += analogRead(RSSI_5G8_B);
     if (--filter == 0)
     {
         rssiA = rssiASum / filterInitCounter;

@@ -17,7 +17,7 @@ void rtc6712WriteRegister(uint32_t data)
 {    
     uint32_t periodMicroSec = 1000000 / RTC6712_BIT_BANG_FREQ;
     
-    digitalWrite(PIN_CS, LOW);
+    digitalWrite(PIN_1G2_CS, LOW);
     delayMicroseconds(periodMicroSec);
 
     for (uint8_t i = 0; i < 24; ++i)
@@ -36,7 +36,7 @@ void rtc6712WriteRegister(uint32_t data)
     delayMicroseconds(periodMicroSec);
     digitalWrite(PIN_MOSI, LOW);
     digitalWrite(PIN_CLK, LOW);
-    digitalWrite(PIN_CS, HIGH);
+    digitalWrite(PIN_1G2_CS, HIGH);
 
     delayMicroseconds(periodMicroSec * 10);
 }
@@ -58,7 +58,7 @@ void rtc6712WriteRegisters(uint16_t r, uint8_t a, uint16_t n, uint32_t regC)
     rtc6712WriteRegister(RegAddrType::RegC, regC);
 }
 
-void rtc6712SetFreq(float inputFreq)
+void rtc6712SetFreq(uint16_t inputFreq)
 {
     uint16_t r = RTC6712_FREQ_REF_MHZ;
     uint8_t a;

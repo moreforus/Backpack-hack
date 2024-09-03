@@ -2,4 +2,4 @@
 
 #include <Arduino.h>
 
-void rtc6712SetFreq(float freq);
+void rtc6712SetFreq(uint16_t freq);
