@@ -22,6 +22,7 @@ Terrestrial::Init()
 
     _scaner1G2 = new Scaner(rtc6712SetFreq, RSSI_1G2_A, RSSI_1G2_B);
     _scaner5G8 = new Scaner(rtc6715SetFreq, RSSI_5G8_A, RSSI_5G8_B);
+    _iEnc = new IncrementalEncoder();
 }
 
 void
@@ -300,6 +301,13 @@ void
 Terrestrial::Loop(uint32_t now)
 {
     ModuleBase::Loop(now);
+    _iEnc->Poll(now);
+    auto state = _iEnc->GetState();
+    if (state != IENCODER_STATE::NONE)
+    {
+        //Serial.printf("%d", (uint8_t)state);
+        //Serial.println();
+    }
 
     auto mode = ParseSerialCommand();
     SetWorkMode(mode);

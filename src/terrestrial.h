@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <mutex>
+#include <iencoder.h>
 
 enum ANTENNA_TYPE : uint8_t
 {
@@ -173,4 +174,5 @@ private:
     std::vector<std::string> messageQueue;
     Scaner* _scaner1G2 = nullptr;
     Scaner* _scaner5G8 = nullptr;
+    IncrementalEncoder* _iEnc;
 };
