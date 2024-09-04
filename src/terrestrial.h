@@ -5,6 +5,7 @@
 #include <channels.h>
 #include <string>
 #include <vector>
+#include <mutex>
 
 enum ANTENNA_TYPE : uint8_t
 {
@@ -168,6 +169,7 @@ private:
     uint16_t maxScaner1G2Freq;
     uint16_t _scanerFilter = 1;
     uint8_t _scanerStep = 1;
+    std::mutex _messageQueueMutex;
     std::vector<std::string> messageQueue;
     Scaner* _scaner1G2 = nullptr;
     Scaner* _scaner5G8 = nullptr;

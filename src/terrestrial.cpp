@@ -233,6 +233,7 @@ Terrestrial::Work(uint32_t now)
             }
 
             auto message = MakeMessage("R", currentFreq);
+            std::lock_guard<std::mutex> _lock(_messageQueueMutex);
             messageQueue.push_back(message);
         }
     }
@@ -259,10 +260,10 @@ Terrestrial::Work(uint32_t now)
             break;
 
             case MEASURE:
-                ANTENNA_TYPE antenna = ANT_A;
                 if (_scaner1G2->MeasureRSSI(now, _scanerFilter))
                 {
                     auto message = _scaner1G2->MakeMessage();
+                    std::lock_guard<std::mutex> _lock(_messageQueueMutex);
                     messageQueue.push_back(message);
                     _scaner1G2->IncrementFreq(_scanerStep);
 
@@ -272,6 +273,7 @@ Terrestrial::Work(uint32_t now)
                 if (_scaner5G8->MeasureRSSI(now, _scanerFilter))
                 {
                     auto message = _scaner5G8->MakeMessage();
+                    std::lock_guard<std::mutex> _lock(_messageQueueMutex);
                     messageQueue.push_back(message);
                     _scaner5G8->IncrementFreq(_scanerStep);
 
@@ -285,6 +287,7 @@ Terrestrial::Work(uint32_t now)
 void
 Terrestrial::SendMessage()
 {
+    std::lock_guard<std::mutex> _lock(_messageQueueMutex);
     if (messageQueue.size() > 0)
     {
         auto tmp = messageQueue.front();
@@ -300,9 +303,7 @@ Terrestrial::Loop(uint32_t now)
 
     auto mode = ParseSerialCommand();
     SetWorkMode(mode);
-    
     Work(now);
-
     SendMessage();
 }
 
