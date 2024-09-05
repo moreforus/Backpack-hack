@@ -3,6 +3,8 @@
 #include "logging.h"
 #include <rtc6715.h>
 #include <lib_rtc6712.h>
+#include <IMenu.h>
+#include <mainMenu.h>
 
 void
 Terrestrial::Init()
@@ -23,6 +25,8 @@ Terrestrial::Init()
     _scaner1G2 = new Scaner(rtc6712SetFreq, RSSI_1G2_A, RSSI_1G2_B);
     _scaner5G8 = new Scaner(rtc6715SetFreq, RSSI_5G8_A, RSSI_5G8_B);
     _iEnc = new IncrementalEncoder();
+    _mainMenu = new MainMenu();
+    _mainMenu->Init();
 }
 
 void
@@ -307,7 +311,10 @@ Terrestrial::Loop(uint32_t now)
     {
         //Serial.printf("%d", (uint8_t)state);
         //Serial.println();
+        _mainMenu->SetUserAction((uint8_t)state);
     }
+
+    _mainMenu->Loop();
 
     auto mode = ParseSerialCommand();
     SetWorkMode(mode);

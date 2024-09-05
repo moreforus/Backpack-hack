@@ -138,6 +138,7 @@ private:
     ANTENNA_TYPE _currentAntenna;
 };
 
+class IMenu;
 class Terrestrial : public ModuleBase
 {
 public:
@@ -175,4 +176,5 @@ private:
     Scaner* _scaner1G2 = nullptr;
     Scaner* _scaner5G8 = nullptr;
     IncrementalEncoder* _iEnc;
+    IMenu* _mainMenu;
 };
