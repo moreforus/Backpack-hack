@@ -3,8 +3,16 @@
 #include "logging.h"
 #include <rtc6715.h>
 #include <lib_rtc6712.h>
-#include <IMenu.h>
-#include <mainMenu.h>
+#include <Terrestrial/remoteConsole.h>
+#include <Terrestrial/userConsole.h>
+
+#define RSSI_DIFF_BORDER (16)
+
+#define MIN_1G2_FREQ (500)
+#define MAX_1G2_FREQ (2500)
+
+#define MIN_5G8_FREQ (4900)
+#define MAX_5G8_FREQ (6000)
 
 void
 Terrestrial::Init()
@@ -19,14 +27,14 @@ Terrestrial::Init()
     pinMode(VIDEO_CTRL, OUTPUT);
 
     DBGLN("Terrestrial init complete");
-    Serial.begin(460800);
-    Serial.setTimeout(1);
+    _remoteConsole = new RemoteConsole(460800);
+    _remoteConsole->Init();
 
-    _scaner1G2 = new Scaner(rtc6712SetFreq, RSSI_1G2_A, RSSI_1G2_B);
-    _scaner5G8 = new Scaner(rtc6715SetFreq, RSSI_5G8_A, RSSI_5G8_B);
-    _iEnc = new IncrementalEncoder();
-    _mainMenu = new MainMenu();
-    _mainMenu->Init();
+    _userConsole = new UserConsole(&_state);
+    _userConsole->Init();
+
+    _scaner1G2 = new Scaner(rtc6712SetFreq, RSSI_1G2_A, RSSI_1G2_B, RSSI_DIFF_BORDER);
+    _scaner5G8 = new Scaner(rtc6715SetFreq, RSSI_5G8_A, RSSI_5G8_B, RSSI_DIFF_BORDER);
 }
 
 void
@@ -47,22 +55,18 @@ Terrestrial::EnableSPIMode()
     DBGLN("SPI config complete");
 }
 
-#define MIN_1G2_FREQ (500)
-#define MAX_1G2_FREQ (2500)
-
-#define MIN_5G8_FREQ (4900)
-#define MAX_5G8_FREQ (6000)
-
 void
 Terrestrial::SetFreq(uint16_t freq)
 {
     if (freq >= MIN_5G8_FREQ)
     {
         rtc6715SetFreq(freq);
+        _state.receiver.freq = freq;
     }
     else if (freq < MAX_1G2_FREQ)
     {
         rtc6712SetFreq(freq);
+        _state.receiver.freq = freq;
     }
 }
 
@@ -79,111 +83,6 @@ Terrestrial::SendIndexCmd(uint8_t index)
     }
 
     SetFreq(currentFreq);
-}
-
-WORK_MODE_TYPE
-Terrestrial::ParseSerialCommand()
-{
-    static char buffer[20] = { 0, 0, };
-    static uint8_t pointer = 0;
-
-    // Rxxxx\n -- set receiving on xxxx freq
-    // Sxxxx:yyyy:dddd:ii\n -- set scanner mode from [xxxx] to [yyyy] with step [ii] MHz freq with delay [dddd] ms on each freq
-    auto data = Serial.read();
-    if (data > 0)
-    {
-        if ((data == '\n' || data == '\r') && pointer)
-        {
-            if (buffer[0] == 'R')
-            {
-                if (pointer >= 4)
-                {
-                    currentFreq = atoi(buffer + 1);
-                    pointer = 0;
-
-                    return RECEIVER;
-                }
-            }
-            else if (buffer[0] == 'S')
-            {
-                if (pointer >= 17)
-                {
-                    char tmp[5];
-                    strncpy(tmp, buffer + 1, 4);
-                    tmp[4] = 0;
-                    uint16_t minFreq = atoi(tmp);
-                    strncpy(tmp, buffer + 6, 4);
-                    tmp[4] = 0;
-                    uint16_t maxFreq = atoi(tmp);
-                    strncpy(tmp, buffer + 11, 4);
-                    tmp[4] = 0;
-                    _scanerFilter = atoi(tmp);
-                    strncpy(tmp, buffer + 16, 2);
-                    tmp[2] = 0;
-                    _scanerStep  = atoi(tmp);
-                    pointer = 0;
-
-
-                    if (minFreq > maxFreq)
-                    {
-                        std::swap(minFreq, maxFreq);
-                    }
-
-                    minScaner1G2Freq = 0;
-                    maxScaner1G2Freq = 0;
-                    minScaner5G8Freq = 0;
-                    maxScaner5G8Freq = 0;
-                    if (minFreq <= MAX_1G2_FREQ)
-                    {
-                        minScaner1G2Freq = minFreq;
-                        maxScaner1G2Freq = MAX_1G2_FREQ;
-
-                        if (maxFreq > MIN_5G8_FREQ)
-                        {
-                            minScaner5G8Freq = MIN_5G8_FREQ;
-                            maxScaner5G8Freq = MAX_5G8_FREQ;
-                        }
-                    }
-
-                    if (maxFreq <= MAX_1G2_FREQ)
-                    {
-                        maxScaner1G2Freq = maxFreq;
-                    }
-
-                    if (minFreq >= MIN_5G8_FREQ && minFreq <= MAX_5G8_FREQ)
-                    {
-                        minScaner5G8Freq = minFreq;
-                        maxScaner5G8Freq = MAX_5G8_FREQ;
-                    }
-
-                    if (maxFreq >= MIN_5G8_FREQ && maxFreq <= MAX_5G8_FREQ)
-                    {
-                        maxScaner5G8Freq = maxFreq;
-                    }
-
-                    return SCANNER;
-                }
-            }
-            else
-            {
-                pointer = 0;
-            }
-        }
-
-        // check the first byte. It must be a command
-        if (pointer == 0)
-        {
-            if (data != 'S' && data != 'R')
-            {
-                return NONE;
-            }
-        }
-
-        buffer[pointer] = data;
-        ++pointer;
-    }
-    
-    return NONE;
 }
 
 void
@@ -223,9 +122,11 @@ Terrestrial::MakeMessage(const char* cmd, const uint16_t freq)
 
 #define DEFAULT_RECEIVER_FILTER (8)
 
-void
+std::string
 Terrestrial::Work(uint32_t now)
 {
+    std::string message;
+
     if (workMode == RECEIVER)
     {
         ANTENNA_TYPE antenna = ANT_A;
@@ -237,9 +138,7 @@ Terrestrial::Work(uint32_t now)
                 SwitchVideo(currentAntenna);
             }
 
-            auto message = MakeMessage("R", currentFreq);
-            std::lock_guard<std::mutex> _lock(_messageQueueMutex);
-            messageQueue.push_back(message);
+            message = MakeMessage("R", currentFreq);
         }
     }
     else if (workMode == SCANNER)
@@ -267,9 +166,7 @@ Terrestrial::Work(uint32_t now)
             case MEASURE:
                 if (_scaner1G2->MeasureRSSI(now, _scanerFilter))
                 {
-                    auto message = _scaner1G2->MakeMessage();
-                    std::lock_guard<std::mutex> _lock(_messageQueueMutex);
-                    messageQueue.push_back(message);
+                    message = _scaner1G2->MakeMessage();
                     _scaner1G2->IncrementFreq(_scanerStep);
 
                     scannerAuto = SET_FREQ;
@@ -277,49 +174,139 @@ Terrestrial::Work(uint32_t now)
 
                 if (_scaner5G8->MeasureRSSI(now, _scanerFilter))
                 {
-                    auto message = _scaner5G8->MakeMessage();
-                    std::lock_guard<std::mutex> _lock(_messageQueueMutex);
-                    messageQueue.push_back(message);
+                    message += _scaner5G8->MakeMessage();
                     _scaner5G8->IncrementFreq(_scanerStep);
 
                     scannerAuto = SET_FREQ;
                 }
+                
             break;
         }
     }
-}
 
-void
-Terrestrial::SendMessage()
-{
-    std::lock_guard<std::mutex> _lock(_messageQueueMutex);
-    if (messageQueue.size() > 0)
-    {
-        auto tmp = messageQueue.front();
-        messageQueue.erase(messageQueue.begin());
-        Serial.println(tmp.c_str());
-    }
+    return message;
 }
 
 void 
 Terrestrial::Loop(uint32_t now)
 {
+    auto usStart = micros();
     ModuleBase::Loop(now);
-    _iEnc->Poll(now);
-    auto state = _iEnc->GetState();
-    if (state != IENCODER_STATE::NONE)
+
+    _remoteConsole->Loop(now);
+    auto command = _remoteConsole->GetCommand();
+    if (!command.empty())
     {
-        //Serial.printf("%d", (uint8_t)state);
-        //Serial.println();
-        _mainMenu->SetUserAction((uint8_t)state);
+        auto mode = ParseCommand(command);
+        SetWorkMode(mode);
     }
 
-    _mainMenu->Loop();
+    auto usI2CStart = micros();
+    _userConsole->Loop(now);
+    command = _userConsole->GetCommand();
+    if (!command.empty())
+    {
+        auto mode = ParseCommand(command);
+        SetWorkMode(mode);
+    }
+    auto usStop = micros();
+    uint8_t i2c = (usStop - usI2CStart) / 10;
+    _state.device.i2c = i2c > 100 ? 100 : i2c;
 
-    auto mode = ParseSerialCommand();
-    SetWorkMode(mode);
-    Work(now);
-    SendMessage();
+    auto answer = Work(now);
+    if (!answer.empty())
+    {
+        _remoteConsole->SendMessage(answer);
+        _userConsole->SendMessage(answer);
+    }
+
+    usStop = micros();
+    uint8_t cpu = (usStop - usStart) / 10;
+    _state.device.cpu = cpu > 100 ? 100 : cpu;
+}
+
+WORK_MODE_TYPE
+Terrestrial::ParseCommand(const std::string& command)
+{
+    // Rxxxx\n -- set receiving on xxxx freq
+    // Sxxxx:yyyy:dddd:ii\n -- set scanner mode from [xxxx] to [yyyy] with step [ii] MHz freq with delay [dddd] ms on each freq
+    if (!command.empty())
+    {
+        if (command[0] == 'R')
+        {
+            if (command.size() >= 4)
+            {
+                currentFreq = atoi(command.c_str() + 1);
+                return RECEIVER;
+            }
+        }
+        else if (command[0] == 'S')
+        {
+            if (command.size() >= 17)
+            {
+                char tmp[5];
+                auto buffer = command.c_str();
+                strncpy(tmp, buffer + 1, 4);
+                tmp[4] = 0;
+                uint16_t minFreq = atoi(tmp);
+                strncpy(tmp, buffer + 6, 4);
+                tmp[4] = 0;
+                uint16_t maxFreq = atoi(tmp);
+                strncpy(tmp, buffer + 11, 4);
+                tmp[4] = 0;
+                _scanerFilter = atoi(tmp);
+                strncpy(tmp, buffer + 16, 2);
+                tmp[2] = 0;
+                _scanerStep  = atoi(tmp);
+
+                if (minFreq > maxFreq)
+                {
+                    std::swap(minFreq, maxFreq);
+                }
+
+                minScaner1G2Freq = 0;
+                maxScaner1G2Freq = 0;
+                minScaner5G8Freq = 0;
+                maxScaner5G8Freq = 0;
+                if (minFreq <= MAX_1G2_FREQ)
+                {
+                    minScaner1G2Freq = minFreq;
+                    maxScaner1G2Freq = MAX_1G2_FREQ;
+
+                    if (maxFreq > MIN_5G8_FREQ)
+                    {
+                        minScaner5G8Freq = MIN_5G8_FREQ;
+                        maxScaner5G8Freq = MAX_5G8_FREQ;
+                    }
+                }
+
+                if (maxFreq <= MAX_1G2_FREQ)
+                {
+                    maxScaner1G2Freq = maxFreq;
+                }
+
+                if (minFreq >= MIN_5G8_FREQ && minFreq <= MAX_5G8_FREQ)
+                {
+                    minScaner5G8Freq = minFreq;
+                    maxScaner5G8Freq = MAX_5G8_FREQ;
+                }
+
+                if (maxFreq >= MIN_5G8_FREQ && maxFreq <= MAX_5G8_FREQ)
+                {
+                    maxScaner5G8Freq = maxFreq;
+                }
+
+                _state.scanner.from = minFreq;
+                _state.scanner.to = maxFreq;
+                _state.scanner.step = _scanerStep;
+                _state.scanner.filter = _scanerFilter;
+
+                return SCANNER;
+            }
+        }
+    }
+    
+    return NONE;
 }
 
 bool 

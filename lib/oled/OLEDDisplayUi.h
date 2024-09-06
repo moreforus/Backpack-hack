@@ -40,6 +40,7 @@
 #error "Unkown operating system"
 #endif
 
+#include <vector>
 #include "OLEDDisplay.h"
 
 //#define DEBUG_OLEDDISPLAYUI(...) Serial.printf( __VA_ARGS__ )
@@ -72,6 +73,7 @@ enum FrameState {
   FIXED
 };
 
+
 const uint8_t ANIMATION_activeSymbol[] PROGMEM = {
   0x00, 0x18, 0x3c, 0x7e, 0x7e, 0x3c, 0x18, 0x00
 };
@@ -80,16 +82,22 @@ const uint8_t ANIMATION_inactiveSymbol[] PROGMEM = {
   0x00, 0x0, 0x0, 0x18, 0x18, 0x0, 0x0, 0x00
 };
 
+
 // Structure of the UiState
 struct OLEDDisplayUiState {
   uint64_t      lastUpdate;
   uint16_t      ticksSinceLastStateSwitch;
+
   FrameState    frameState;
   uint8_t       currentFrame;
+
   bool          isIndicatorDrawn;
+
   // Normal = 1, Inverse = -1;
   int8_t        frameTransitionDirection;
+
   bool          manualControl;
+
   // Custom data that can be used by the user
   void*         userData;
 };
@@ -99,11 +107,10 @@ struct LoadingStage {
   void (*callback)();
 };
 
-//typedef void (*FrameCallback)(OLEDDisplay *display,  OLEDDisplayUiState* state, int16_t x, int16_t y);
-typedef void (*OverlayCallback)(OLEDDisplay *display,  OLEDDisplayUiState* state);
 typedef void (*LoadingDrawFunction)(OLEDDisplay *display, LoadingStage* stage, uint8_t progress);
 
 class IFrame;
+class IOverlay;
 class OLEDDisplayUi {
   private:
     OLEDDisplay             *display;
@@ -127,16 +134,13 @@ class OLEDDisplayUi {
 
     bool                autoTransition;
 
-    //FrameCallback*      frameFunctions;
-    IFrame**             frameFunctions;
-    uint8_t             frameCount;
+    std::vector<IFrame*>    frames;
 
     // Internally used to transition to a specific frame
     int8_t              nextFrameNumber;
 
     // Values for Overlays
-    OverlayCallback*    overlayFunctions;
-    uint8_t             overlayCount;
+    std::vector<IOverlay*>    overlays;
 
     // Will the Indicator be drawn
     // 3 Not drawn in both frames
@@ -263,14 +267,14 @@ class OLEDDisplayUi {
     /**
      * Add frame drawing functions
      */
-    void setFrames(IFrame** frameFunctions, uint8_t frameCount);
+    void setFrames(std::vector<IFrame*>& frames);
 
     // Overlay
 
     /**
      * Add overlays drawing functions that are draw independent of the Frames
      */
-    void setOverlays(OverlayCallback* overlayFunctions, uint8_t overlayCount);
+    void setOverlays(const std::vector<IOverlay*>& overlays);
 
 
     // Loading animation
@@ -301,6 +305,9 @@ class OLEDDisplayUi {
      * frame the forward animation will be used, otherwise the backwards animation is used.
      */
     void transitionToFrame(uint8_t frame);
+
+    uint8_t getCurrentFrame() const;
+    uint8_t getNextFrame() const;
 
     // State Info
     OLEDDisplayUiState* getUiState();
