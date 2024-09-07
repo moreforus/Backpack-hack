@@ -9,7 +9,7 @@ class OLEDDisplayUiState;
 class Button : public ChildWidget
 {
 public:
-    Button(IWidgetObserver* parent, const std::string& caption, uint8_t x, uint8_t y, uint8_t width, uint8_t height);
+    Button(const std::string& caption, uint8_t x, uint8_t y, uint8_t width, uint8_t height);
     virtual void SetCommand(WIDGET_COMMAND_TYPE command) override;
     void OnButtonPressed(std::function<void()> callback)
     {

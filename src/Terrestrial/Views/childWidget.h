@@ -5,12 +5,11 @@
 
 class OLEDDisplay;
 class OLEDDisplayUiState;
-class IWidgetObserver;
 class ChildWidget : public BaseFrame
 {
 public:
-    ChildWidget(IWidgetObserver* parent, uint8_t x, uint8_t y, uint8_t width, uint8_t height)
-        : _parent(parent), _x(x), _y(y), _width(width), _height(height)
+    ChildWidget(uint8_t x, uint8_t y, uint8_t width, uint8_t height)
+        : _x(x), _y(y), _width(width), _height(height)
     {
 
     }
@@ -39,7 +38,6 @@ public:
     }
 
 protected:
-    IWidgetObserver* _parent;
     uint8_t _x;
     uint8_t _y;
     uint8_t _width;

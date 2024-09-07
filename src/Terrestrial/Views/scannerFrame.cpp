@@ -1,17 +1,39 @@
-#include <Terrestrial/Views/receiverFrame.h>
-#include <OLEDDisplay.h>
-#include <OLEDDisplayUi.h>
+#include <Terrestrial/Views/scannerFrame.h>
 #include <string>
 #include <Terrestrial\Views\button.h>
 #include <Terrestrial\Views\editBox.h>
 
-ReceiverFrame::ReceiverFrame(RECEIVER_SETTINGS* dataModel)
+ScannerFrame::ScannerFrame(SCANNER_SETTINGS* dataModel)
     : _dataModel(dataModel)
 {
-    auto edit = new EditBox(dataModel->freq, 900, 6000, 30, 18, 30, 10);
+    auto edit = new EditBox(dataModel->from, 900, 6000, 30, 18, 30, 10);
     edit->OnEditCompeted([&](EditBox* sender, uint16_t value)
     {
-        _dataModel->freq = value;
+        _dataModel->from = value;
+        sender->UpdateValue(value);
+    });
+    _children.push_back(edit);
+
+    edit = new EditBox(dataModel->to, 900, 6000, 30, 28, 30, 10);
+    edit->OnEditCompeted([&](EditBox* sender, uint16_t value)
+    {
+        _dataModel->to = value;
+        sender->UpdateValue(value);
+    });
+    _children.push_back(edit);
+
+    edit = new EditBox(dataModel->step, 1, 200, 30, 38, 30, 10);
+    edit->OnEditCompeted([&](EditBox* sender, uint16_t value)
+    {
+        _dataModel->step = value;
+        sender->UpdateValue(value);
+    });
+    _children.push_back(edit);
+
+    edit = new EditBox(dataModel->filter, 1, 99, 30, 48, 30, 10);
+    edit->OnEditCompeted([&](EditBox* sender, uint16_t value)
+    {
+        _dataModel->filter = value;
         sender->UpdateValue(value);
     });
     _children.push_back(edit);
@@ -32,35 +54,15 @@ ReceiverFrame::ReceiverFrame(RECEIVER_SETTINGS* dataModel)
     _children.push_back(btn);
 }
 
-void ReceiverFrame::SetActive(bool isActive)
+void ScannerFrame::SetActive(bool isActive)
 {
-    _children[1]->SetVisibility(isActive);
-    _children[2]->SetVisibility(isActive);
+    _children[4]->SetVisibility(isActive);
+    _children[5]->SetVisibility(isActive);
 
     BaseFrame::SetActive(isActive);
 }
 
-void ReceiverFrame::Preview(OLEDDisplay* display,  OLEDDisplayUiState* state, int16_t x, int16_t y)
-{
-    display->setTextAlignment(TEXT_ALIGN_LEFT);
-    display->setFont(ArialMT_Plain_16);
-    display->drawString(0 + x, 0 + y, "Receiver");
-   
-    display->setFont(ArialMT_Plain_10);
-    display->drawString(0 + x, 18 + y, "Freq:");
-
-    for(int i = 0; i < _children.size(); ++i)
-    {
-        _children[i]->Draw(display, state, x, y);
-    }
-}
-
-void ReceiverFrame::Active(OLEDDisplay* display,  OLEDDisplayUiState* state, int16_t x, int16_t y)
-{
-    Preview(display, state, x, y);
-}
-
-void ReceiverFrame::SetCommand(WIDGET_COMMAND_TYPE command)
+void ScannerFrame::SetCommand(WIDGET_COMMAND_TYPE command)
 {
     if (_activeWidgetIndex > -1)
     {
@@ -111,4 +113,27 @@ void ReceiverFrame::SetCommand(WIDGET_COMMAND_TYPE command)
     {
 
     }
+}
+
+void ScannerFrame::Preview(OLEDDisplay* display,  OLEDDisplayUiState* state, int16_t x, int16_t y)
+{
+    display->setTextAlignment(TEXT_ALIGN_LEFT);
+    display->setFont(ArialMT_Plain_16);
+    display->drawString(0 + x, 0 + y, "Scanner");
+
+    display->setFont(ArialMT_Plain_10);
+    display->drawString(0 + x, 18 + y, "From:");
+    display->drawString(0 + x, 28 + y, "To:");
+    display->drawString(0 + x, 38 + y, "Step:");
+    display->drawString(0 + x, 48 + y, "Filter:");
+
+    for(int i = 0; i < _children.size(); ++i)
+    {
+        _children[i]->Draw(display, state, x, y);
+    }
+}
+
+void ScannerFrame::Active(OLEDDisplay* display,  OLEDDisplayUiState* state, int16_t x, int16_t y)
+{
+    Preview(display, state, x, y);
 }

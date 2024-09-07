@@ -9,7 +9,7 @@ class OLEDDisplayUiState;
 class EditBox : public ChildWidget
 {
 public:
-    EditBox(IWidgetObserver* parent, uint16_t value, uint16_t min, uint16_t max, uint8_t x, uint8_t y, uint8_t width, uint8_t height);
+    EditBox(uint16_t value, uint16_t min, uint16_t max, uint8_t x, uint8_t y, uint8_t width, uint8_t height);
     virtual void SetCommand(WIDGET_COMMAND_TYPE command) override;
     void OnEditCompeted(std::function<void(EditBox* sender, uint16_t value)> callback)
     {

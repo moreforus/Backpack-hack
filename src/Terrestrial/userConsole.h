@@ -28,6 +28,7 @@ private:
     OLEDDisplayUi* _ui;
     IncrementalEncoder* _iEnc;
 
+    std::mutex _commandMutex;
     std::string _command;
     std::mutex _messageQueueMutex;
     std::vector<std::string> _messageQueue;

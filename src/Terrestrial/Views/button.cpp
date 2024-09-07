@@ -1,8 +1,7 @@
 #include <Terrestrial/Views/button.h>
-#include <Terrestrial/Views/IWidgetObserver.h>
 
-Button::Button(IWidgetObserver* parent, const std::string& caption, uint8_t x, uint8_t y, uint8_t width, uint8_t height)
-    : ChildWidget(parent, x, y, width, height), _caption(caption)
+Button::Button(const std::string& caption, uint8_t x, uint8_t y, uint8_t width, uint8_t height)
+    : ChildWidget(x, y, width, height), _caption(caption)
 {
 
 }
@@ -18,8 +17,6 @@ void Button::SetCommand(WIDGET_COMMAND_TYPE command)
         {
             _callback();
         }
-
-        _parent->OnAction(this, nullptr);
     }
 }
 

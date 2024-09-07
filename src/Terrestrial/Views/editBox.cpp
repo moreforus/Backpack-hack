@@ -1,7 +1,7 @@
 #include <Terrestrial/Views/editBox.h>
 
-EditBox::EditBox(IWidgetObserver* parent, uint16_t value, uint16_t min, uint16_t max, uint8_t x, uint8_t y, uint8_t width, uint8_t height)
-    : ChildWidget(parent, x, y, width, height), _value(value), _minValue(min), _maxValue(max)
+EditBox::EditBox(uint16_t value, uint16_t min, uint16_t max, uint8_t x, uint8_t y, uint8_t width, uint8_t height)
+    : ChildWidget(x, y, width, height), _value(value), _minValue(min), _maxValue(max)
 {
 
 }
@@ -109,12 +109,12 @@ void EditBox::Edited(OLEDDisplay* display,  OLEDDisplayUiState* state, int16_t x
     if (_isBlink)
     {
         ++_blinkTimer;
-        if (_blinkTimer < 10)
+        if (_blinkTimer < 5)
         {
             return;
         }
 
-        if (_blinkTimer == 20)
+        if (_blinkTimer == 10)
         {
             _blinkTimer = 0;
         }
