@@ -56,6 +56,12 @@ IncrementalEncoder::Poll(uint32_t now)
                 std::lock_guard<std::mutex> _lock(_bufferMutex);
                 _buffer.push_back(IENCODER_STATE::BUTTON_LONG_PRESS);
             }
+            
+            if (_swFilter == 10)
+            {
+                std::lock_guard<std::mutex> _lock(_bufferMutex);
+                _buffer.push_back(IENCODER_STATE::BUTTON_START_PRESS);    
+            }
         }
         else
         {

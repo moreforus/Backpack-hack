@@ -2,9 +2,7 @@
 #include <SSD1306Wire.h>
 #include <OLEDDisplayUi.h>
 #include <iencoder.h>
-#include <Terrestrial/menuItem.h>
-
-std::string UserConsole::_commands[] = {"R", "S", "T"};
+#include <Terrestrial/Views/receiverFrame.h>
 
 UserConsole::UserConsole(TERRESTRIAL_STATE* state)
     : _state(state)
@@ -23,23 +21,22 @@ UserConsole::Init()
     _ui->setIndicatorPosition(BOTTOM);
     _ui->setIndicatorDirection(LEFT_RIGHT);
     _ui->setFrameAnimation(SLIDE_LEFT);
-    _frames.push_back(new MenuItem([&](OLEDDisplay *display, OLEDDisplayUiState* state, int16_t x, int16_t y) 
-        {
-            display->setTextAlignment(TEXT_ALIGN_LEFT);
-            display->setFont(ArialMT_Plain_16);
-            display->drawString(0 + x, 0 + y, "Receiver");
-            display->setFont(ArialMT_Plain_10);
-            display->drawString(0 + x, 18 + y, "Freq:");
-
-            auto tmp = std::to_string(_state->receiver.freq);
-            display->drawString(30 + x, 18 + y, tmp.c_str());
-        }
-        ));
-    _frames.push_back(new MenuItem([&](OLEDDisplay *display, OLEDDisplayUiState* state, int16_t x, int16_t y) 
+    BaseFrame* receiverFrame = new ReceiverFrame(&_state->receiver);
+    receiverFrame->OnExit([&](BaseFrame* sender)
+    { 
+        sender->SetActive(false);
+        _ui->enableAllIndicators();
+    });
+    _frames.push_back(receiverFrame);
+    /*_frames.push_back(new BaseFrame([&](OLEDDisplay *display, OLEDDisplayUiState* state, int16_t x, int16_t y) 
         {
             display->setTextAlignment(TEXT_ALIGN_LEFT);
             display->setFont(ArialMT_Plain_16);
             display->drawString(0 + x, 0 + y, "Scanner");
+
+            //display->drawString(87 + x, 18 + y, "Start");
+            //display->drawRect(85 + x, 18 + y, 39, 17);
+
             display->setFont(ArialMT_Plain_10);
             display->drawString(0 + x, 18 + y, "From:");
             display->drawString(0 + x, 28 + y, "To:");
@@ -54,10 +51,9 @@ UserConsole::Init()
             display->drawString(30 + x, 38 + y, tmp.c_str());
             tmp = std::to_string(_state->scanner.filter);
             display->drawString(30 + x, 48 + y, tmp.c_str());
-
         }
         ));
-    _frames.push_back(new MenuItem([&](OLEDDisplay *display, OLEDDisplayUiState* state, int16_t x, int16_t y) 
+    _frames.push_back(new BaseFrame([&](OLEDDisplay *display, OLEDDisplayUiState* state, int16_t x, int16_t y) 
         {
             display->setTextAlignment(TEXT_ALIGN_LEFT);
             display->setFont(ArialMT_Plain_16);
@@ -71,7 +67,7 @@ UserConsole::Init()
             tmp = std::to_string(_state->device.i2c);
             display->drawString((tmp.size() == 1 ? 34 : 30) + x, 28 + y, tmp.c_str());
         }
-        ));       
+        ));*/
     _ui->setFrames(_frames);
 
     // TODO: overlays: Battery, Loading CPU, Band:Channel, Freq
@@ -88,13 +84,59 @@ UserConsole::Loop(uint32_t now)
     auto state = _iEnc->GetState();
     if (state != IENCODER_STATE::NONE)
     {
-        if (state == IENCODER_STATE::PLUS)
+        auto baseFrame = (BaseFrame*)_frames[_ui->getCurrentFrame()];
+        if ((baseFrame)->IsActive())
         {
-            _ui->nextFrame();
+            WIDGET_COMMAND_TYPE command = WIDGET_COMMAND_TYPE::NONE;
+            if (state == IENCODER_STATE::PLUS)
+            {
+                command = WIDGET_COMMAND_TYPE::INCREMENT;
+            }
+            else if (state == IENCODER_STATE::MINUS)
+            {
+                command = WIDGET_COMMAND_TYPE::DECREMENT;
+            }
+            else if (state == IENCODER_STATE::BUTTON_SHORT_PRESS)
+            {
+                command = WIDGET_COMMAND_TYPE::ENTER;
+            }
+            else if (state == IENCODER_STATE::BUTTON_LONG_PRESS)
+            {
+                command = WIDGET_COMMAND_TYPE::CANCEL;
+            }
+            else if (state == IENCODER_STATE::BUTTON_START_PRESS)
+            {
+                command = WIDGET_COMMAND_TYPE::BUTTON_PRESS_STARTED;
+            }
+
+            baseFrame->SetCommand(command);
         }
-        else if (state == IENCODER_STATE::MINUS)
+        else
         {
-            _ui->previousFrame();
+            if (state == IENCODER_STATE::PLUS)
+            {
+                _ui->nextFrame();
+            }
+            else if (state == IENCODER_STATE::MINUS)
+            {
+                _ui->previousFrame();
+            }
+            else if (state == IENCODER_STATE::BUTTON_SHORT_PRESS)
+            {
+                baseFrame->SetActive(true);
+                /*baseFrame->OnExit([&]()
+                { 
+                    baseFrame->SetActive(false);
+                    _ui->enableAllIndicators();
+                });*/
+
+                _ui->disableAllIndicators();
+            }
+            else if (state == IENCODER_STATE::BUTTON_LONG_PRESS)
+            {
+                baseFrame->SetActive(false);
+                _ui->enableAllIndicators();
+            }
         }
     }
 

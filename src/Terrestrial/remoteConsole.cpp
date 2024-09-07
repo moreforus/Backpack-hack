@@ -22,7 +22,7 @@ RemoteConsole::Loop(uint32_t now)
         {
             auto message = _messageQueue.front();
             _messageQueue.erase(_messageQueue.begin());
-            Serial.println(message.c_str());
+            Serial.print(message.c_str());
         }
     }
 

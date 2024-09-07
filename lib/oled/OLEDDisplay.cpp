@@ -1034,7 +1034,9 @@ void OLEDDisplay::sendInitCommands(void) {
   sendCommand(DISPLAYON);
 }
 
-void inline OLEDDisplay::drawInternal(int16_t xMove, int16_t yMove, int16_t width, int16_t height, const uint8_t *data, uint16_t offset, uint16_t bytesInData) {
+void inline OLEDDisplay::drawInternal(int16_t xMove, int16_t yMove, int16_t width, int16_t height
+                                      , const uint8_t *data, uint16_t offset, uint16_t bytesInData) 
+{
   if (width < 0 || height < 0) return;
   if (yMove + height < 0 || yMove > this->height())  return;
   if (xMove + width  < 0 || xMove > this->width())   return;

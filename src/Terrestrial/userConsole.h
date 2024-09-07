@@ -4,7 +4,7 @@
 #include <mutex>
 #include <string>
 #include <vector>
-#include <Terrestrial/terrestrialState.h>
+#include <Terrestrial/DataModel/terrestrialState.h>
 
 class SSD1306Wire;
 class OLEDDisplay;
@@ -33,5 +33,5 @@ private:
     std::vector<std::string> _messageQueue;
 
     std::vector<IFrame*> _frames;
-    const TERRESTRIAL_STATE* _state;
+    TERRESTRIAL_STATE* _state;
 };

@@ -89,7 +89,7 @@ public:
     {
         uint64_t us = micros();
         char str[48];
-        sprintf(str, "S:%d[%d:%d]%d>%llu", _scanerFreq, _rssiA, _rssiB, _currentAntenna, us);
+        sprintf(str, "S:%d[%d:%d]%d>%llu\r\n", _scanerFreq, _rssiA, _rssiB, _currentAntenna, us);
     
         return str;
     }

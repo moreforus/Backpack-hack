@@ -9,6 +9,7 @@ enum class IENCODER_STATE : uint8_t
     NONE = 0x00,
     PLUS = 0x01,
     MINUS = 0x02,
+    BUTTON_START_PRESS = 0x04,
     BUTTON_PRESS = 0x10,
     PLUS_PRESS_BUTTON = 0x11,
     MINUS_PRESS_BUTTON = 0x12,

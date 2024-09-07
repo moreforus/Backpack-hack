@@ -115,7 +115,7 @@ Terrestrial::MakeMessage(const char* cmd, const uint16_t freq)
 {
     uint64_t us = micros();
     char str[48];
-    sprintf(str, "%s:%d[%d:%d]%d>%llu", cmd, freq, rssiA, rssiB, currentAntenna, us);
+    sprintf(str, "%s:%d[%d:%d]%d>%llu\r\n", cmd, freq, rssiA, rssiB, currentAntenna, us);
     
     return str;
 }

@@ -5,7 +5,7 @@
 #include <string>
 #include <Terrestrial/scanner.h>
 #include <Terrestrial/antennaType.h>
-#include <Terrestrial/terrestrialState.h>
+#include <Terrestrial/DataModel/terrestrialState.h>
 
 enum WORK_MODE_TYPE : uint8_t
 {
