@@ -5,6 +5,7 @@
 #include <lib_rtc6712.h>
 #include <Terrestrial/remoteConsole.h>
 #include <Terrestrial/userConsole.h>
+#include <common.h>
 
 #define RSSI_DIFF_BORDER (16)
 
@@ -265,6 +266,8 @@ Terrestrial::Loop(uint32_t now)
     usStop = micros();
     uint8_t cpu = (usStop - usStart) / 10;
     _state.device.cpu = cpu > 100 ? 100 : cpu;
+
+    _state.device.connectionState = connectionState;
 }
 
 WORK_MODE_TYPE
@@ -399,10 +402,4 @@ void
 Terrestrial::SwitchVideo(ANTENNA_TYPE antenna)
 {
     digitalWrite(VIDEO_CTRL, (antenna == ANT_A ? LOW : HIGH));
-}
-
-void 
-Terrestrial::UpdateConnectionState(connectionState_e connectionState)
-{
-    _state.device.connectionState = connectionState;
 }

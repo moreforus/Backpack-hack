@@ -13,7 +13,6 @@ struct SCANNER_SETTINGS
     uint16_t to = 6000;
     uint16_t step = 1;
     uint16_t filter = 1;
-
 };
 
 struct DEVICE_STATE
