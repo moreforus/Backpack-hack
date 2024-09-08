@@ -40,7 +40,7 @@ private:
     ANTENNA_TYPE currentAntenna = ANT_A;
     uint32_t currentTimeMs = 0;
     WORK_MODE_TYPE workMode = RECEIVER;
-    SCANNER_AUTO_TYPE scannerAuto;
+    SCANNER_AUTO_TYPE scannerAuto = SCANNER_AUTO_TYPE::INIT;
     uint16_t minScaner5G8Freq;
     uint16_t maxScaner5G8Freq;
     uint16_t minScaner1G2Freq;

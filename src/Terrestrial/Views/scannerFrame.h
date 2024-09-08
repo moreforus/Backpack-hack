@@ -19,5 +19,5 @@ protected:
     virtual void Preview(OLEDDisplay* display,  OLEDDisplayUiState* state, int16_t x, int16_t y) override;
     virtual void Active(OLEDDisplay* display,  OLEDDisplayUiState* state, int16_t x, int16_t y) override;
     SCANNER_SETTINGS* _dataModel;
-    uint16_t* _rssi;
+    uint16_t* _rssi = nullptr;
 };

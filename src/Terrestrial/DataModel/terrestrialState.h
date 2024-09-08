@@ -11,8 +11,8 @@ struct SCANNER_SETTINGS
 {
     uint16_t from = 1000;
     uint16_t to = 6000;
-    uint16_t step = 10;
-    uint16_t filter = 8;
+    uint16_t step = 1;
+    uint16_t filter = 1;
 
 };
 
@@ -24,6 +24,8 @@ struct DEVICE_STATE
     connectionState_e connectionState;
 };
 
+#define RSSI_BUFFER_SIZE (128)
+
 struct TERRESTRIAL_STATE
 {
     RECEIVER_SETTINGS receiver;
@@ -31,5 +33,5 @@ struct TERRESTRIAL_STATE
     DEVICE_STATE device;
     uint16_t rssiA;
     uint16_t rssiB;
-    uint16_t rssi[128];
+    uint16_t rssi[RSSI_BUFFER_SIZE];
 };

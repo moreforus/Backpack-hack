@@ -128,10 +128,13 @@ void ScannerFrame::Preview(OLEDDisplay* display,  OLEDDisplayUiState* state, int
     display->setFont(ArialMT_Plain_16);
     display->drawString(0 + x, 0 + y, "Scanner");
 
-    for(int i = 0; i < 128; ++i)
+    if (_rssi != nullptr)
     {
-        uint8_t height = (64.0 / 2048) * _rssi[i];
-        display->drawLine(i + x, 64 - height + y, i + x, 64 + y);
+        for(int i = 0; i < RSSI_BUFFER_SIZE; ++i)
+        {
+            uint8_t height = (64.0 / 2048) * _rssi[i];
+            display->drawLine(i + x, 64 - height + y, i + x, 64 + y);
+        }
     }
 }
 

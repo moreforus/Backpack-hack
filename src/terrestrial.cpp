@@ -26,6 +26,8 @@ Terrestrial::Init()
     pinMode(PIN_1G2_CS, INPUT);
     pinMode(VIDEO_CTRL, OUTPUT);
 
+    memset(_state.rssi, 0, RSSI_BUFFER_SIZE);
+
     DBGLN("Terrestrial init complete");
     _remoteConsole = new RemoteConsole(921600);
     _remoteConsole->Init();
@@ -181,7 +183,7 @@ Terrestrial::Work(uint32_t now)
                     }
 
                     auto count = (to - from) / _scanerStep;
-                    double rt = 64.0 / count;
+                    double rt = ((double)RSSI_BUFFER_SIZE / 2) / count;
                     uint8_t x = (_scaner1G2->GetFreq() - from / _scanerStep) * rt;
                     _state.rssi[x] = _scaner1G2->GetRssiA();
 
@@ -205,9 +207,9 @@ Terrestrial::Work(uint32_t now)
                     }
 
                     auto count = (to - from) / _scanerStep;
-                    double rt = 64.0 / count;
+                    double rt = ((double)RSSI_BUFFER_SIZE / 2) / count;
                     uint8_t x = (_scaner5G8->GetFreq() - from / _scanerStep) * rt;
-                    _state.rssi[64 + x] = _scaner5G8->GetRssiA();
+                    _state.rssi[RSSI_BUFFER_SIZE / 2 + x] = _scaner5G8->GetRssiA();
 
                     _scaner5G8->IncrementFreq(_scanerStep);
                     scannerAuto = SET_FREQ;
@@ -256,7 +258,7 @@ Terrestrial::Loop(uint32_t now)
     auto answer = Work(now);
     if (!answer.empty())
     {
-        //_remoteConsole->SendMessage(answer);
+        _remoteConsole->SendMessage(answer);
         _userConsole->SendMessage(answer);
     }
 
