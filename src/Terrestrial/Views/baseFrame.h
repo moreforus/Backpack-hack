@@ -37,7 +37,7 @@ public:
 
     virtual void SetCommand(WIDGET_COMMAND_TYPE command) = 0;
 
-    void OnExit(std::function<void(BaseFrame* sender)> callback)
+    void OnExit(std::function<void(BaseFrame* sender, bool isSave)> callback)
     {
         _onExit = callback;
     }
@@ -51,5 +51,5 @@ protected:
     std::vector<ChildWidget*> _children;
     ChildWidget* _activeWidget = nullptr;
     uint8_t _activeWidgetIndex = -1;
-    std::function<void(BaseFrame* sender)> _onExit;
+    std::function<void(BaseFrame* sender, bool isSave)> _onExit;
 };

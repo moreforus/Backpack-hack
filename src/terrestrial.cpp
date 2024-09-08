@@ -18,7 +18,7 @@ void
 Terrestrial::Init()
 {
     ModuleBase::Init();
-    
+
     // common MOSI and CLK pins
     pinMode(PIN_MOSI, INPUT);
     pinMode(PIN_CLK, INPUT);
@@ -61,12 +61,12 @@ Terrestrial::SetFreq(uint16_t freq)
     if (freq >= MIN_5G8_FREQ)
     {
         rtc6715SetFreq(freq);
-        _state.receiver.freq = freq;
+        _state.receiver.currentFreq = freq;
     }
     else if (freq < MAX_1G2_FREQ)
     {
         rtc6712SetFreq(freq);
-        _state.receiver.freq = freq;
+        _state.receiver.currentFreq = freq;
     }
 }
 
@@ -76,13 +76,13 @@ Terrestrial::SendIndexCmd(uint8_t index)
     DBG("Setting index ");
     DBGLN("%x", index);
 
-    currentFreq = frequencyTable[index];
+    _state.receiver.currentFreq = frequencyTable[index];
     if (!SPIModeEnabled) 
     {
         EnableSPIMode();
     }
 
-    SetFreq(currentFreq);
+    SetFreq(_state.receiver.currentFreq);
 }
 
 void
@@ -106,7 +106,7 @@ Terrestrial::SetWorkMode(WORK_MODE_TYPE mode)
             EnableSPIMode();
         }
 
-        SetFreq(currentFreq);
+        SetFreq(_state.receiver.currentFreq);
     }
 }
 
@@ -115,7 +115,7 @@ Terrestrial::MakeMessage(const char* cmd, const uint16_t freq)
 {
     uint64_t us = micros();
     char str[48];
-    sprintf(str, "%s:%d[%d:%d]%d>%llu\r\n", cmd, freq, rssiA, rssiB, currentAntenna, us);
+    sprintf(str, "%s:%d[%d:%d]%d>%llu\r\n", cmd, freq, _state.rssiA, _state.rssiB, currentAntenna, us);
     
     return str;
 }
@@ -138,7 +138,7 @@ Terrestrial::Work(uint32_t now)
                 SwitchVideo(currentAntenna);
             }
 
-            message = MakeMessage("R", currentFreq);
+            message = MakeMessage("R", _state.receiver.currentFreq);
         }
     }
     else if (workMode == SCANNER)
@@ -187,6 +187,11 @@ Terrestrial::Work(uint32_t now)
     return message;
 }
 
+void Terrestrial::SaveConfig()
+{
+
+}
+
 void 
 Terrestrial::Loop(uint32_t now)
 {
@@ -199,6 +204,7 @@ Terrestrial::Loop(uint32_t now)
     {
         auto mode = ParseCommand(command);
         SetWorkMode(mode);
+        SaveConfig();
     }
 
     auto usI2CStart = micros();
@@ -208,6 +214,7 @@ Terrestrial::Loop(uint32_t now)
     {
         auto mode = ParseCommand(command);
         SetWorkMode(mode);
+        SaveConfig();
     }
     auto usStop = micros();
     uint8_t i2c = (usStop - usI2CStart) / 10;
@@ -236,7 +243,7 @@ Terrestrial::ParseCommand(const std::string& command)
         {
             if (command.size() >= 4)
             {
-                currentFreq = atoi(command.c_str() + 1);
+                _state.receiver.currentFreq = atoi(command.c_str() + 1);
                 return RECEIVER;
             }
         }
@@ -332,14 +339,14 @@ Terrestrial::CheckRSSI(uint32_t now, ANTENNA_TYPE& antenna, uint16_t filterInitC
     rssiBSum += analogRead(RSSI_5G8_B);
     if (--filter == 0)
     {
-        rssiA = rssiASum / filterInitCounter;
-        rssiB = rssiBSum / filterInitCounter;
+        _state.rssiA = rssiASum / filterInitCounter;
+        _state.rssiB = rssiBSum / filterInitCounter;
 
-        if (rssiA - rssiB > RSSI_DIFF_BORDER)
+        if (_state.rssiA - _state.rssiB > RSSI_DIFF_BORDER)
         {
             antenna = ANT_A;
         }
-        else if (rssiB - rssiA > RSSI_DIFF_BORDER)
+        else if (_state.rssiB - _state.rssiA > RSSI_DIFF_BORDER)
         {
             antenna = ANT_B;
         }

@@ -12,6 +12,7 @@ class OLEDDisplayUi;
 class OLEDDisplayUiState;
 class IncrementalEncoder;
 class IFrame;
+class ReceiverFrame;
 class UserConsole : public IConsole
 {
 public:
@@ -35,4 +36,5 @@ private:
 
     std::vector<IFrame*> _frames;
     TERRESTRIAL_STATE* _state;
+    ReceiverFrame* _receiverFrame;
 };

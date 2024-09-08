@@ -44,13 +44,20 @@ ScannerFrame::ScannerFrame(SCANNER_SETTINGS* dataModel)
     {
         if (_onExit)
         {
-            _onExit(this);
+            _onExit(this, true);
         }
     });
     _children.push_back(btn);
 
     btn = new Button("X", 112, 0, 16, 16);
     btn->SetVisibility(false);
+    btn->OnButtonPressed([&]()
+    {
+        if (_onExit)
+        {
+            _onExit(this, false);
+        }
+    });
     _children.push_back(btn);
 }
 

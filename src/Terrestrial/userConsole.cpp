@@ -23,25 +23,33 @@ UserConsole::Init()
     _ui->setIndicatorPosition(BOTTOM);
     _ui->setIndicatorDirection(LEFT_RIGHT);
     _ui->setFrameAnimation(SLIDE_LEFT);
-    BaseFrame* receiverFrame = new ReceiverFrame(&_state->receiver);
-    receiverFrame->OnExit([&](BaseFrame* sender)
+
+    _receiverFrame = new ReceiverFrame(&_state->receiver);
+    BaseFrame* receiverFrame = _receiverFrame;
+    receiverFrame->OnExit([&](BaseFrame* sender, bool isSave)
     { 
         sender->SetActive(false);
         _ui->enableAllIndicators();
-        std::lock_guard<std::mutex> lock(_commandMutex);
-        _command = "R" + std::to_string(_state->receiver.freq);
+        if (isSave)
+        {
+            std::lock_guard<std::mutex> lock(_commandMutex);
+            _command = "R" + std::to_string(_state->receiver.currentFreq);
+        }
     });
     _frames.push_back(receiverFrame);
 
     BaseFrame* scannerFrame = new ScannerFrame(&_state->scanner);
-    scannerFrame->OnExit([&](BaseFrame* sender)
+    scannerFrame->OnExit([&](BaseFrame* sender, bool isSave)
     { 
         sender->SetActive(false);
         _ui->enableAllIndicators();
-        char tmp[64];
-        sprintf(tmp, "S%04d:%04d:%04d:%02d", _state->scanner.from, _state->scanner.to, _state->scanner.step, _state->scanner.filter);
-        std::lock_guard<std::mutex> lock(_commandMutex);
-        _command = tmp;
+        if (isSave)
+        {
+            char tmp[64];
+            sprintf(tmp, "S%04d:%04d:%04d:%02d", _state->scanner.from, _state->scanner.to, _state->scanner.step, _state->scanner.filter);
+            std::lock_guard<std::mutex> lock(_commandMutex);
+            _command = tmp;
+        }
     });
     _frames.push_back(scannerFrame);
 
@@ -132,5 +140,8 @@ UserConsole::GetCommand()
 void
 UserConsole::SendMessage(const std::string& message)
 {
-
+    if (message[0] == 'R')
+    {
+        _receiverFrame->UpdateRSSI(_state->rssiA, _state->rssiB);
+    }
 }

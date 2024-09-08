@@ -32,13 +32,11 @@ private:
     std::string Work(uint32_t now);
     std::string MakeMessage(const char* cmd, const uint16_t freq);
     void SetFreq(uint16_t freq);
+    void SaveConfig();
 
     bool SPIModeEnabled = false;
     ANTENNA_TYPE currentAntenna = ANT_A;
     uint32_t currentTimeMs = 0;
-    uint16_t rssiA = 0;
-    uint16_t rssiB = 0;
-    uint16_t currentFreq = 0;
     WORK_MODE_TYPE workMode = RECEIVER;
     SCANNER_AUTO_TYPE scannerAuto;
     uint16_t minScaner5G8Freq;
