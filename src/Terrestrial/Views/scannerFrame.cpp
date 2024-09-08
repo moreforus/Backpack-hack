@@ -22,7 +22,7 @@ ScannerFrame::ScannerFrame(SCANNER_SETTINGS* dataModel)
     });
     _children.push_back(edit);
 
-    edit = new EditBox(dataModel->step, 1, 200, 30, 38, 30, 10);
+    edit = new EditBox(dataModel->step, 1, 99, 30, 38, 30, 10);
     edit->OnEditCompeted([&](EditBox* sender, uint16_t value)
     {
         _dataModel->step = value;
@@ -30,7 +30,7 @@ ScannerFrame::ScannerFrame(SCANNER_SETTINGS* dataModel)
     });
     _children.push_back(edit);
 
-    edit = new EditBox(dataModel->filter, 1, 99, 30, 48, 30, 10);
+    edit = new EditBox(dataModel->filter, 1, 200, 30, 48, 30, 10);
     edit->OnEditCompeted([&](EditBox* sender, uint16_t value)
     {
         _dataModel->filter = value;

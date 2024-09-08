@@ -185,10 +185,10 @@ Terrestrial::Work(uint32_t now)
 
                     auto count = (to - from) / _scanerStep;
                     double rt = ((double)RSSI_BUFFER_SIZE / 2) / count;
-                    uint8_t x = (_scaner1G2->GetFreq() - from / _scanerStep) * rt;
+                    uint8_t x = ((_scaner1G2->GetFreq() - from) / _scanerStep) * rt;
                     _state.rssi[x] = _scaner1G2->GetRssiA();
 
-                     _scaner1G2->IncrementFreq(_scanerStep);
+                    _scaner1G2->IncrementFreq(_scanerStep);
                     scannerAuto = SET_FREQ;
                 }
 
@@ -209,7 +209,7 @@ Terrestrial::Work(uint32_t now)
 
                     auto count = (to - from) / _scanerStep;
                     double rt = ((double)RSSI_BUFFER_SIZE / 2) / count;
-                    uint8_t x = (_scaner5G8->GetFreq() - from / _scanerStep) * rt;
+                    uint8_t x = ((_scaner5G8->GetFreq() - from) / _scanerStep) * rt;
                     _state.rssi[RSSI_BUFFER_SIZE / 2 + x] = _scaner5G8->GetRssiA();
 
                     _scaner5G8->IncrementFreq(_scanerStep);

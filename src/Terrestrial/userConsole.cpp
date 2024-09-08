@@ -45,7 +45,7 @@ UserConsole::Init()
         if (isSave)
         {
             char tmp[64];
-            sprintf(tmp, "S%04d:%04d:%04d:%02d", _state->scanner.from, _state->scanner.to, _state->scanner.step, _state->scanner.filter);
+            sprintf(tmp, "S%04d:%04d:%04d:%02d", _state->scanner.from, _state->scanner.to, _state->scanner.filter, _state->scanner.step);
             std::lock_guard<std::mutex> lock(_commandMutex);
             _command = tmp;
         }
