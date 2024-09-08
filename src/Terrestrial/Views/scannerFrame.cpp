@@ -128,6 +128,19 @@ void ScannerFrame::Preview(OLEDDisplay* display,  OLEDDisplayUiState* state, int
     display->setFont(ArialMT_Plain_16);
     display->drawString(0 + x, 0 + y, "Scanner");
 
+    for(int i = 0; i < 128; ++i)
+    {
+        uint8_t height = (64.0 / 2048) * _rssi[i];
+        display->drawLine(i + x, 64 - height + y, i + x, 64 + y);
+    }
+}
+
+void ScannerFrame::Active(OLEDDisplay* display,  OLEDDisplayUiState* state, int16_t x, int16_t y)
+{
+    display->setTextAlignment(TEXT_ALIGN_LEFT);
+    display->setFont(ArialMT_Plain_16);
+    display->drawString(0 + x, 0 + y, "Scanner");
+
     display->setFont(ArialMT_Plain_10);
     display->drawString(0 + x, 18 + y, "From:");
     display->drawString(0 + x, 28 + y, "To:");
@@ -138,9 +151,4 @@ void ScannerFrame::Preview(OLEDDisplay* display,  OLEDDisplayUiState* state, int
     {
         _children[i]->Draw(display, state, x, y);
     }
-}
-
-void ScannerFrame::Active(OLEDDisplay* display,  OLEDDisplayUiState* state, int16_t x, int16_t y)
-{
-    Preview(display, state, x, y);
 }

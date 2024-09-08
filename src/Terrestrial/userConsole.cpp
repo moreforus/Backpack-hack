@@ -25,8 +25,7 @@ UserConsole::Init()
     _ui->setFrameAnimation(SLIDE_LEFT);
 
     _receiverFrame = new ReceiverFrame(&_state->receiver);
-    BaseFrame* receiverFrame = _receiverFrame;
-    receiverFrame->OnExit([&](BaseFrame* sender, bool isSave)
+    _receiverFrame->OnExit([&](BaseFrame* sender, bool isSave)
     { 
         sender->SetActive(false);
         _ui->enableAllIndicators();
@@ -36,10 +35,10 @@ UserConsole::Init()
             _command = "R" + std::to_string(_state->receiver.currentFreq);
         }
     });
-    _frames.push_back(receiverFrame);
+    _frames.push_back((BaseFrame*)_receiverFrame);
 
-    BaseFrame* scannerFrame = new ScannerFrame(&_state->scanner);
-    scannerFrame->OnExit([&](BaseFrame* sender, bool isSave)
+    _scannerFrame = new ScannerFrame(&_state->scanner);
+    _scannerFrame->OnExit([&](BaseFrame* sender, bool isSave)
     { 
         sender->SetActive(false);
         _ui->enableAllIndicators();
@@ -51,7 +50,7 @@ UserConsole::Init()
             _command = tmp;
         }
     });
-    _frames.push_back(scannerFrame);
+    _frames.push_back(_scannerFrame);
 
     BaseFrame* deviceFrame = new DeviceFrame(&_state->device);
     _frames.push_back(deviceFrame);
@@ -143,5 +142,9 @@ UserConsole::SendMessage(const std::string& message)
     if (message[0] == 'R')
     {
         _receiverFrame->UpdateRSSI(_state->rssiA, _state->rssiB);
+    }
+    else if (message[0] == 'S')
+    {
+        _scannerFrame->UpdateRSSI(_state->rssi);
     }
 }

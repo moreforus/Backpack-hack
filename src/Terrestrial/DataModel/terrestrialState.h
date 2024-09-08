@@ -8,10 +8,10 @@ struct RECEIVER_SETTINGS
 
 struct SCANNER_SETTINGS
 {
-    uint16_t from;
-    uint16_t to;
-    uint16_t step;
-    uint16_t filter;
+    uint16_t from = 1000;
+    uint16_t to = 6000;
+    uint16_t step = 10;
+    uint16_t filter = 8;
 
 };
 

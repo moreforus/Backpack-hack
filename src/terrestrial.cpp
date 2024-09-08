@@ -167,16 +167,49 @@ Terrestrial::Work(uint32_t now)
                 if (_scaner1G2->MeasureRSSI(now, _scanerFilter))
                 {
                     message = _scaner1G2->MakeMessage();
-                    _scaner1G2->IncrementFreq(_scanerStep);
 
+                    uint16_t from = MIN_1G2_FREQ;
+                    uint16_t to = MAX_1G2_FREQ;
+                    if (_state.scanner.from < MAX_1G2_FREQ)
+                    {
+                        from = _state.scanner.from;
+                    }
+                    
+                    if (_state.scanner.to < MAX_1G2_FREQ)
+                    {
+                        to = _state.scanner.to;
+                    }
+
+                    auto count = (to - from) / _scanerStep;
+                    double rt = 64.0 / count;
+                    uint8_t x = (_scaner1G2->GetFreq() - from / _scanerStep) * rt;
+                    _state.rssi[x] = _scaner1G2->GetRssiA();
+
+                     _scaner1G2->IncrementFreq(_scanerStep);
                     scannerAuto = SET_FREQ;
                 }
 
                 if (_scaner5G8->MeasureRSSI(now, _scanerFilter))
                 {
                     message += _scaner5G8->MakeMessage();
-                    _scaner5G8->IncrementFreq(_scanerStep);
+                    uint16_t from = MIN_5G8_FREQ;
+                    uint16_t to = MAX_5G8_FREQ;
+                    if (_state.scanner.from >= MIN_5G8_FREQ)
+                    {
+                        from = _state.scanner.from;
+                    }
+                    
+                    if (_state.scanner.to < MAX_5G8_FREQ)
+                    {
+                        to = _state.scanner.to;
+                    }
 
+                    auto count = (to - from) / _scanerStep;
+                    double rt = 64.0 / count;
+                    uint8_t x = (_scaner5G8->GetFreq() - from / _scanerStep) * rt;
+                    _state.rssi[64 + x] = _scaner5G8->GetRssiA();
+
+                    _scaner5G8->IncrementFreq(_scanerStep);
                     scannerAuto = SET_FREQ;
                 }
                 

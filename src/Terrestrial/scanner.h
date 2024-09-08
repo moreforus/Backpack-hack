@@ -36,6 +36,11 @@ public:
         _worker(_scanerFreq);
     }
 
+    uint16_t GetFreq() const
+    {
+        return _scanerFreq;
+    }
+
     bool MeasureRSSI(uint32_t now, uint16_t filterInitCounter)
     {
         if (now - _currentTimeMs < 1)

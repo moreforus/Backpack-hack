@@ -62,9 +62,9 @@ void ReceiverFrame::Preview(OLEDDisplay* display,  OLEDDisplayUiState* state, in
     auto tmp = std::to_string(_dataModel->currentFreq);
     display->drawString(64 + x, 18 + y, tmp.c_str());
 
-    uint8_t height = 64.0 / 2048 * rssiA;
+    uint8_t height = 64.0 / 2048 * _rssiA;
     display->fillRect(0 + x, 64 - height + y, 20, height);
-    height = 64.0 / 2048 * rssiB;
+    height = 64.0 / 2048 * _rssiB;
     display->fillRect(108 + x, 64 - height + y, 20, height);
 }
 

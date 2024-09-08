@@ -12,14 +12,14 @@ public:
     virtual void SetCommand(WIDGET_COMMAND_TYPE command) override;
     void UpdateRSSI(uint16_t rssia, uint16_t rssib)
     {
-        rssiA = rssia;
-        rssiB = rssib;
+        _rssiA = rssia;
+        _rssiB = rssib;
     }
 
 protected:
     virtual void Preview(OLEDDisplay* display,  OLEDDisplayUiState* state, int16_t x, int16_t y) override;
     virtual void Active(OLEDDisplay* display,  OLEDDisplayUiState* state, int16_t x, int16_t y) override;
     RECEIVER_SETTINGS* _dataModel;
-    uint16_t rssiA;
-    uint16_t rssiB;
+    uint16_t _rssiA;
+    uint16_t _rssiB;
 };
