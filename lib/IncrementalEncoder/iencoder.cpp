@@ -79,7 +79,7 @@ IncrementalEncoder::Poll(uint32_t now)
 
     if (_clk != clk)
     {
-        auto data = clk ? ((dt ? IENCODER_STATE::PLUS : IENCODER_STATE::MINUS)) : ((dt ? IENCODER_STATE::MINUS : IENCODER_STATE::PLUS));
+        auto data = clk ? ((dt ? IENCODER_STATE::MINUS : IENCODER_STATE::PLUS)) : ((dt ? IENCODER_STATE::PLUS : IENCODER_STATE::MINUS));
         _clk = clk;
         std::lock_guard<std::mutex> _lock(_bufferMutex);
         _buffer.push_back((IENCODER_STATE)((uint8_t)data | (uint8_t)(sw == LOW ? IENCODER_STATE::BUTTON_PRESS : IENCODER_STATE::NONE)));

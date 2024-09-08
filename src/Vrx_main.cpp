@@ -488,6 +488,9 @@ void loop()
   uint32_t now = millis();
 
   devicesUpdate(now);
+#if defined(TERRESTRIAL_BACKPACK)
+  ((Terrestrial)vrxModule).UpdateConnectionState(connectionState);
+#endif
   vrxModule.Loop(now);
 
   #if defined(PLATFORM_ESP8266)

@@ -6,6 +6,7 @@
 #include <Terrestrial/scanner.h>
 #include <Terrestrial/antennaType.h>
 #include <Terrestrial/DataModel/terrestrialState.h>
+#include <common.h>
 
 enum WORK_MODE_TYPE : uint8_t
 {
@@ -22,6 +23,7 @@ public:
     void Init();
     void SendIndexCmd(uint8_t index);
     void Loop(uint32_t now);
+    void UpdateConnectionState(connectionState_e connectionState);
 
 private:
     void EnableSPIMode();

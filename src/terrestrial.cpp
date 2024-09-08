@@ -27,7 +27,7 @@ Terrestrial::Init()
     pinMode(VIDEO_CTRL, OUTPUT);
 
     DBGLN("Terrestrial init complete");
-    _remoteConsole = new RemoteConsole(460800);
+    _remoteConsole = new RemoteConsole(921600);
     _remoteConsole->Init();
 
     _userConsole = new UserConsole(&_state);
@@ -256,7 +256,7 @@ Terrestrial::Loop(uint32_t now)
     auto answer = Work(now);
     if (!answer.empty())
     {
-        _remoteConsole->SendMessage(answer);
+        //_remoteConsole->SendMessage(answer);
         _userConsole->SendMessage(answer);
     }
 
@@ -397,4 +397,10 @@ void
 Terrestrial::SwitchVideo(ANTENNA_TYPE antenna)
 {
     digitalWrite(VIDEO_CTRL, (antenna == ANT_A ? LOW : HIGH));
+}
+
+void 
+Terrestrial::UpdateConnectionState(connectionState_e connectionState)
+{
+    _state.device.connectionState = connectionState;
 }

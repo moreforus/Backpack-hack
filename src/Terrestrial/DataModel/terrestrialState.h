@@ -1,5 +1,6 @@
 #pragma once
 #include <Arduino.h>
+#include <common.h>
 
 struct RECEIVER_SETTINGS
 {
@@ -20,6 +21,7 @@ struct DEVICE_STATE
     uint8_t cpu;
     uint8_t i2c;
     uint8_t battery;
+    connectionState_e connectionState;
 };
 
 struct TERRESTRIAL_STATE
