@@ -10,7 +10,7 @@ class RemoteConsole : public IConsole
 public:
     RemoteConsole(unsigned long baud);
     virtual void Init() override;
-    virtual void Loop(uint32_t now) override;
+    virtual void Loop() override;
     virtual std::string GetCommand() override;
     virtual void SendMessage(const std::string& message) override;
 

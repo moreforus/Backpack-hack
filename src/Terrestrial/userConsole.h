@@ -19,7 +19,7 @@ class UserConsole : public IConsole
 public:
     UserConsole(TERRESTRIAL_STATE* state);
     virtual void Init() override;
-    virtual void Loop(uint32_t now) override;
+    virtual void Loop() override;
     virtual std::string GetCommand() override;
     virtual void SendMessage(const std::string& message) override;
 

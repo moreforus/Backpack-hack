@@ -34,7 +34,7 @@ Terrestrial::Init()
     pinMode(PIN_1G2_CS, INPUT);
     pinMode(VIDEO_CTRL, OUTPUT);
 
-    memset(_state.rssi, 0, RSSI_BUFFER_SIZE);
+    memset(_state.rssi, 0, sizeof(_state.rssi));
 
     DBGLN("Terrestrial init complete");
     _remoteConsole = new RemoteConsole(921600);
@@ -93,6 +93,7 @@ Terrestrial::SendIndexCmd(uint8_t index)
     }
 
     SetFreq(_state.receiver.currentFreq);
+    SaveConfig();
 }
 
 void
@@ -126,6 +127,7 @@ Terrestrial::MakeMessage(const char* cmd, const uint16_t freq)
     uint64_t us = micros();
     char str[48];
     sprintf(str, "%s:%d[%d:%d]%d>%llu\r\n", cmd, freq, _state.rssiA, _state.rssiB, currentAntenna, us);
+    //sprintf(str, "%s:%d[%d:%d]%d>0\r\n", cmd, freq, _state.rssiA, _state.rssiB, currentAntenna);
     
     return str;
 }
@@ -133,14 +135,14 @@ Terrestrial::MakeMessage(const char* cmd, const uint16_t freq)
 #define DEFAULT_RECEIVER_FILTER (8)
 
 std::string
-Terrestrial::Work(uint32_t now)
+Terrestrial::Work()
 {
     std::string message;
 
     if (workMode == RECEIVER)
     {
         ANTENNA_TYPE antenna = ANT_A;
-        if (CheckRSSI(now, antenna, DEFAULT_RECEIVER_FILTER))
+        if (CheckRSSI(antenna, DEFAULT_RECEIVER_FILTER))
         {
             if (antenna != currentAntenna)
             {
@@ -159,22 +161,25 @@ Terrestrial::Work(uint32_t now)
                 _scaner1G2->Init(minScaner1G2Freq, maxScaner1G2Freq);
                 _scaner5G8->Init(minScaner5G8Freq, maxScaner5G8Freq);
 
-                scannerAuto = SET_FREQ;
+                scannerAuto = SET_FREQ_1G2;
             break;
-            case SET_FREQ:
+            case SET_FREQ_1G2:
                 if (!SPIModeEnabled) 
                 {
                     EnableSPIMode();
                 }
 
-                _scaner1G2->SetFreq();
-                _scaner5G8->SetFreq();
+                _scaner1G2->SetFreq(_scanerFilter);
+                scannerAuto = SET_FREQ_5G8;
+            break;
 
+            case SET_FREQ_5G8:
+                _scaner5G8->SetFreq(_scanerFilter);
                 scannerAuto = MEASURE;
             break;
 
             case MEASURE:
-                if (_scaner1G2->MeasureRSSI(now, _scanerFilter))
+                if (_scaner1G2->MeasureRSSI())
                 {
                     message = _scaner1G2->MakeMessage();
 
@@ -196,10 +201,9 @@ Terrestrial::Work(uint32_t now)
                     _state.rssi[x] = _scaner1G2->GetRssiA();
 
                     _scaner1G2->IncrementFreq(_scanerStep);
-                    scannerAuto = SET_FREQ;
                 }
 
-                if (_scaner5G8->MeasureRSSI(now, _scanerFilter))
+                if (_scaner5G8->MeasureRSSI())
                 {
                     message += _scaner5G8->MakeMessage();
                     uint16_t from = MIN_5G8_FREQ;
@@ -220,7 +224,7 @@ Terrestrial::Work(uint32_t now)
                     _state.rssi[RSSI_BUFFER_SIZE / 2 + x] = _scaner5G8->GetRssiA();
 
                     _scaner5G8->IncrementFreq(_scanerStep);
-                    scannerAuto = SET_FREQ;
+                    scannerAuto = SET_FREQ_1G2;
                 }
                 
             break;
@@ -247,7 +251,7 @@ Terrestrial::Loop(uint32_t now)
     auto usStart = micros();
     ModuleBase::Loop(now);
 
-    _remoteConsole->Loop(now);
+    _remoteConsole->Loop();
     auto command = _remoteConsole->GetCommand();
     if (!command.empty())
     {
@@ -256,8 +260,15 @@ Terrestrial::Loop(uint32_t now)
         SaveConfig();
     }
 
+    if (currentTimeMs == now)
+    {
+        return;
+    }
+
+    currentTimeMs = now;
+
     auto usI2CStart = micros();
-    _userConsole->Loop(now);
+    _userConsole->Loop();
     command = _userConsole->GetCommand();
     if (!command.empty())
     {
@@ -269,7 +280,7 @@ Terrestrial::Loop(uint32_t now)
     uint8_t i2c = (usStop - usI2CStart) / 10;
     _state.device.i2c = i2c > 100 ? 100 : i2c;
 
-    auto answer = Work(now);
+    auto answer = Work();
     if (!answer.empty())
     {
         _remoteConsole->SendMessage(answer);
@@ -368,20 +379,13 @@ Terrestrial::ParseCommand(const std::string& command)
 }
 
 bool 
-Terrestrial::CheckRSSI(uint32_t now, ANTENNA_TYPE& antenna, uint16_t filterInitCounter)
+Terrestrial::CheckRSSI(ANTENNA_TYPE& antenna, uint16_t filterInitCounter)
 {
     static uint16_t filter = 0;
     static uint32_t rssiASum = 0;
     static uint32_t rssiBSum = 0;
 
-    if (now - currentTimeMs < 1)
-    {
-        return false;
-    }
-
     if (filter == 0) filter = filterInitCounter;
-
-    currentTimeMs = now;
 
     analogRead(RSSI_5G8_A);
     rssiASum += analogRead(RSSI_5G8_A);

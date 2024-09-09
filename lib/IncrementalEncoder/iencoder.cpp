@@ -39,15 +39,13 @@ IncrementalEncoder::GetState()
 }
 
 void
-IncrementalEncoder::Poll(uint32_t now)
+IncrementalEncoder::Poll()
 {
 #if defined(IENC_SW) && defined(IENC_DT) && defined(IENC_CLK)
     auto clk = digitalRead(IENC_CLK);
     auto dt = digitalRead(IENC_DT);
     uint8_t sw = digitalRead(IENC_SW);
 
-    if (now - _pollTime > 0)
-    {
         if (sw == LOW)
         {
             ++_swFilter;
@@ -73,9 +71,7 @@ IncrementalEncoder::Poll(uint32_t now)
 
             _swFilter = 0;
         }
-        
-        _pollTime = now;
-    }
+
 
     if (_clk != clk)
     {

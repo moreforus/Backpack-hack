@@ -23,7 +23,7 @@ public:
     IncrementalEncoder();
     ~IncrementalEncoder();
     IENCODER_STATE GetState();
-    void Poll(uint32_t now);
+    void Poll();
 
 private:
     std::mutex _bufferMutex;
@@ -31,5 +31,4 @@ private:
     uint8_t _clk;
     uint8_t _sw;
     uint16_t _swFilter = 0;
-    uint32_t _pollTime;
 };

@@ -30,11 +30,11 @@ public:
 
 private:
     void EnableSPIMode();
-    bool CheckRSSI(uint32_t now, ANTENNA_TYPE& antenna, uint16_t filterInitCounter);
+    bool CheckRSSI(ANTENNA_TYPE& antenna, uint16_t filterInitCounter);
     void SwitchVideo(ANTENNA_TYPE antenna);
     WORK_MODE_TYPE ParseCommand(const std::string& command);
     void SetWorkMode(WORK_MODE_TYPE mode);
-    std::string Work(uint32_t now);
+    std::string Work();
     std::string MakeMessage(const char* cmd, const uint16_t freq);
     void SetFreq(uint16_t freq);
     void SaveConfig();

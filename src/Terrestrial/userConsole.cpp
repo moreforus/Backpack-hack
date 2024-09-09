@@ -65,9 +65,9 @@ UserConsole::Init()
 }
 
 void
-UserConsole::Loop(uint32_t now)
+UserConsole::Loop()
 {
-    _iEnc->Poll(now);
+    _iEnc->Poll();
     auto state = _iEnc->GetState();
     if (state != IENCODER_STATE::NONE)
     {

@@ -5,7 +5,8 @@
 enum SCANNER_AUTO_TYPE : uint8_t
 {
     INIT = 0,
-    SET_FREQ,
+    SET_FREQ_1G2,
+    SET_FREQ_5G8,
     MEASURE,
 };
 
@@ -31,9 +32,11 @@ public:
         _rssiBSum = 0;
     }
 
-    void SetFreq()
+    void SetFreq(uint16_t filterInitCounter)
     {
         _worker(_scanerFreq);
+        _filterInitCounter = filterInitCounter;
+        _filter = filterInitCounter;
     }
 
     uint16_t GetFreq() const
@@ -41,26 +44,19 @@ public:
         return _scanerFreq;
     }
 
-    bool MeasureRSSI(uint32_t now, uint16_t filterInitCounter)
+    bool MeasureRSSI()
     {
-        if (now - _currentTimeMs < 1)
+        if (_filter == 0)
         {
             return false;
         }
 
-        if (_filter == 0) _filter = filterInitCounter;
-
-        _currentTimeMs = now;
-
-        analogRead(_rssiApin);
         _rssiASum += analogRead(_rssiApin);
-    
-        analogRead(_rssiBpin);
         _rssiBSum += analogRead(_rssiBpin);
         if (--_filter == 0)
         {
-            _rssiA = _rssiASum / filterInitCounter;
-            _rssiB = _rssiBSum / filterInitCounter;
+            _rssiA = _rssiASum / _filterInitCounter;
+            _rssiB = _rssiBSum / _filterInitCounter;
 
             if (_rssiA - _rssiB > _rssiDiff)
             {
@@ -118,9 +114,9 @@ private:
     uint16_t _filter = 0;
     uint32_t _rssiASum = 0;
     uint32_t _rssiBSum = 0;
-    uint32_t _currentTimeMs = 0;
     const uint8_t _rssiApin;
     const uint8_t _rssiBpin;
     const uint8_t _rssiDiff;
     ANTENNA_TYPE _currentAntenna;
+    uint16_t _filterInitCounter;
 };

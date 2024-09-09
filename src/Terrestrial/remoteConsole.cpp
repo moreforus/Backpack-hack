@@ -13,7 +13,7 @@ RemoteConsole::Init()
 }
 
 void
-RemoteConsole::Loop(uint32_t now)
+RemoteConsole::Loop()
 {
     if (Serial.availableForWrite())
     {
