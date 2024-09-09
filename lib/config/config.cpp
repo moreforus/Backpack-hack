@@ -116,6 +116,10 @@ VrxBackpackConfig::Load()
     // Populate the struct from eeprom
     m_eeprom->Get(0, m_config);
 
+#if defined(TERRESTRIAL_BACKPACK)
+    m_eeprom->Get(sizeof(m_config), m_terrestrialConfig);
+#endif
+
     // Check if version number matches
     if (m_config.version != (uint32_t)(VRX_BACKPACK_CONFIG_VERSION | VRX_BACKPACK_CONFIG_MAGIC))
     {
@@ -173,6 +177,15 @@ VrxBackpackConfig::SetDefaults()
     m_config.vbat.offset = -2;
 #endif
 
+#if defined(TERRESTRIAL_BACKPACK)
+    m_terrestrialConfig.receiverFreq = 5658; // 5.658 GHz
+    m_terrestrialConfig.from = 900; // 0.9 GHz
+    m_terrestrialConfig.to = 6000; // 6 GHz
+    m_terrestrialConfig.filter = 8; // ms
+    m_terrestrialConfig.step = 4; // 4 MHz
+    CommitTerrestrial();
+#endif
+
     m_modified = true;
     Commit();
 }
@@ -211,6 +224,23 @@ VrxBackpackConfig::SetStartWiFiOnBoot(bool startWifi)
     m_config.startWiFi = startWifi;
     m_modified = true;
 }
+
+#if defined(TERRESTRIAL_BACKPACK)
+
+void 
+VrxBackpackConfig::CommitTerrestrial()
+{
+    m_eeprom->Put(sizeof(m_config), m_terrestrialConfig);
+    m_eeprom->Commit();
+}
+
+terrestrial_config_t* 
+VrxBackpackConfig::GetTerrestrialConfig()
+{
+    return &m_terrestrialConfig;
+}
+
+#endif
 
 #if defined(AAT_BACKPACK)
 

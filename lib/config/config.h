@@ -104,6 +104,17 @@ typedef struct {
 #endif
 } vrx_backpack_config_t;
 
+#if defined(TERRESTRIAL_BACKPACK)
+typedef struct
+{
+    uint16_t receiverFreq;
+    uint16_t from;
+    uint16_t to;
+    uint16_t filter;
+    uint16_t step;
+} terrestrial_config_t;
+#endif
+
 class VrxBackpackConfig
 {
 public:
@@ -148,10 +159,18 @@ public:
     void SetVbatOffset(int16_t val);
 #endif
 
+#if defined(TERRESTRIAL_BACKPACK)
+    void CommitTerrestrial();
+    terrestrial_config_t* GetTerrestrialConfig();
+#endif
+
 private:
     vrx_backpack_config_t   m_config;
     ELRS_EEPROM             *m_eeprom;
     bool                    m_modified;
+#if defined(TERRESTRIAL_BACKPACK)
+    terrestrial_config_t    m_terrestrialConfig;
+#endif
 };
 
 extern VrxBackpackConfig config;

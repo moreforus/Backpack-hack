@@ -6,6 +6,7 @@
 #include <Terrestrial/remoteConsole.h>
 #include <Terrestrial/userConsole.h>
 #include <common.h>
+#include "config.h"
 
 #define RSSI_DIFF_BORDER (16)
 
@@ -19,6 +20,12 @@ void
 Terrestrial::Init()
 {
     ModuleBase::Init();
+    auto cfg = _config->GetTerrestrialConfig();
+    _state.receiver.currentFreq = cfg->receiverFreq;
+    _state.scanner.from = cfg->from;
+    _state.scanner.to = cfg->to;
+    _state.scanner.filter = cfg->filter;
+    _state.scanner.step = cfg->step;
 
     // common MOSI and CLK pins
     pinMode(PIN_MOSI, INPUT);
@@ -225,7 +232,13 @@ Terrestrial::Work(uint32_t now)
 
 void Terrestrial::SaveConfig()
 {
-
+    auto cfg = _config->GetTerrestrialConfig();
+    cfg->receiverFreq = _state.receiver.currentFreq;
+    cfg->from = _state.scanner.from;
+    cfg->to = _state.scanner.to;
+    cfg->filter = _state.scanner.filter;
+    cfg->step = _state.scanner.step;
+    _config->CommitTerrestrial();
 }
 
 void 

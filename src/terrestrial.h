@@ -16,9 +16,14 @@ enum WORK_MODE_TYPE : uint8_t
 
 class RemoteConsole;
 class UserConsole;
+class VrxBackpackConfig;
 class Terrestrial : public ModuleBase
 {
 public:
+    Terrestrial(VrxBackpackConfig* config) : _config(config)
+    {
+    }
+
     void Init();
     void SendIndexCmd(uint8_t index);
     void Loop(uint32_t now);
@@ -50,4 +55,5 @@ private:
     RemoteConsole* _remoteConsole;
     UserConsole* _userConsole;
     TERRESTRIAL_STATE _state;
+    VrxBackpackConfig* _config;
 };

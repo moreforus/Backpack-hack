@@ -128,7 +128,7 @@ VrxBackpackConfig config;
 #elif defined(CROSSBOW_BACKPACK)
   MFDCrossbow vrxModule(&Serial);
 #elif defined(TERRESTRIAL_BACKPACK)
-  Terrestrial vrxModule;
+  Terrestrial vrxModule(&config);
 #endif
 
 /////////// FUNCTION DEFS ///////////
