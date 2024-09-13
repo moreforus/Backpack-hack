@@ -19,9 +19,9 @@ struct ScannerRssiState_t
 
 typedef void (*worker)(uint16_t);
 
-class Scaner {
+class Scanner {
 public:
-    Scaner(worker function, uint8_t rssiApin, uint8_t rssiBpin, uint8_t rssiDiff)
+    Scanner(worker function, uint8_t rssiApin, uint8_t rssiBpin, uint8_t rssiDiff)
     : _rssiApin(rssiApin), 
       _rssiBpin(rssiBpin),
       _rssiDiff(rssiDiff)
@@ -33,7 +33,7 @@ public:
     {
         _minFreq = minFreq;
         _maxFreq = maxFreq;
-        _scanerFreq = _minFreq;
+        _scannerFreq = _minFreq;
         _filter = 0;
         _rssiASum = 0;
         _rssiBSum = 0;
@@ -42,14 +42,14 @@ public:
 
     void SetFreq(uint16_t filterInitCounter)
     {
-        _worker(_scanerFreq);
+        _worker(_scannerFreq);
         _filterInitCounter = filterInitCounter;
         _filter = filterInitCounter;
     }
 
     uint16_t GetFreq() const
     {
-        return _scanerFreq;
+        return _scannerFreq;
     }
 
     bool MeasureRSSI()
@@ -72,7 +72,7 @@ public:
                 if (_scannerRssiState.rssiMax < _rssiA)
                 {
                     _scannerRssiState.rssiMax = _rssiA;
-                    _scannerRssiState.freqForMaxValue = _scanerFreq;
+                    _scannerRssiState.freqForMaxValue = _scannerFreq;
                 }
 
                 /*if (_rssiB > 50 && _rssiB < _scannerRssiState.rssiMin)
@@ -90,7 +90,7 @@ public:
                 if (_scannerRssiState.rssiMax < _rssiB)
                 {
                     _scannerRssiState.rssiMax = _rssiB;
-                    _scannerRssiState.freqForMaxValue = _scanerFreq;
+                    _scannerRssiState.freqForMaxValue = _scannerFreq;
                 }
 
                 if (_rssiA < _scannerRssiState.rssiMin)
@@ -127,17 +127,17 @@ public:
     {
         uint64_t us = micros();
         char str[48];
-        sprintf(str, "S:%d[%d:%d]%d>%llu\r\n", _scanerFreq, _rssiA, _rssiB, _currentAntenna, us);
+        sprintf(str, "S:%d[%d:%d]%d>%llu\r\n", _scannerFreq, _rssiA, _rssiB, _currentAntenna, us);
     
         return str;
     }
 
     bool IncrementFreq(uint8_t step)
     {
-        _scanerFreq += step;
-        if (_scanerFreq > _maxFreq)
+        _scannerFreq += step;
+        if (_scannerFreq > _maxFreq)
         {
-            _scanerFreq = _minFreq;
+            _scannerFreq = _minFreq;
             return true;
         }
 
@@ -158,7 +158,7 @@ public:
 
 private:
     worker _worker;
-    uint16_t _scanerFreq;
+    uint16_t _scannerFreq;
     uint16_t _minFreq;
     uint16_t _maxFreq;
     uint16_t _rssiA = 0;

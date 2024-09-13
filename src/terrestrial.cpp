@@ -43,8 +43,8 @@ Terrestrial::Init()
     _userConsole = new UserConsole(&_state);
     _userConsole->Init();
 
-    _scanner1G2 = new Scaner(rtc6712SetFreq, RSSI_1G2_A, RSSI_1G2_B, RSSI_DIFF_BORDER);
-    _scanner5G8 = new Scaner(rtc6715SetFreq, RSSI_5G8_A, RSSI_5G8_B, RSSI_DIFF_BORDER);
+    _scanner1G2 = new Scanner(rtc6712SetFreq, RSSI_1G2_A, RSSI_1G2_B, RSSI_DIFF_BORDER);
+    _scanner5G8 = new Scanner(rtc6715SetFreq, RSSI_5G8_A, RSSI_5G8_B, RSSI_DIFF_BORDER);
 }
 
 void
@@ -157,8 +157,8 @@ Terrestrial::Work()
         switch (scannerAuto)
         {
             case INIT:
-                _scanner1G2->Init(minScaner1G2Freq, maxScaner1G2Freq);
-                _scanner5G8->Init(minScaner5G8Freq, maxScaner5G8Freq);
+                _scanner1G2->Init(minScanner1G2Freq, maxScanner1G2Freq);
+                _scanner5G8->Init(minScanner5G8Freq, maxScanner5G8Freq);
                 scannerAuto = SET_FREQ_1G2;
                 _isScalingCompleted = false;
             break;
@@ -168,12 +168,12 @@ Terrestrial::Work()
                     EnableSPIMode();
                 }
 
-                _scanner1G2->SetFreq(_scanerFilter);
+                _scanner1G2->SetFreq(_scannerFilter);
                 scannerAuto = SET_FREQ_5G8;
             break;
 
             case SET_FREQ_5G8:
-                _scanner5G8->SetFreq(_scanerFilter);
+                _scanner5G8->SetFreq(_scannerFilter);
                 scannerAuto = MEASURE;
             break;
 
@@ -193,15 +193,15 @@ Terrestrial::Work()
                         to = _state.scanner.to;
                     }
 
-                    auto count = (to - from) / _scanerStep;
+                    auto count = (to - from) / _scannerStep;
                     double rt = ((double)RSSI_BUFFER_SIZE / 2) / count;
-                    uint8_t x = ((_scanner1G2->GetFreq() - from) / _scanerStep) * rt;
+                    uint8_t x = ((_scanner1G2->GetFreq() - from) / _scannerStep) * rt;
                     if (x < RSSI_BUFFER_SIZE)
                     {
                         _state.scannerState.rssi[x] = _scanner1G2->GetMaxRssi() * _scale1G2;
                     }
 
-                    if (_scanner1G2->IncrementFreq(_scanerStep))
+                    if (_scanner1G2->IncrementFreq(_scannerStep))
                     {
                         auto state1g2 = _scanner1G2->GetRssiState();
                         _state.scannerState.SetMaxFreq1G2(state1g2.freqForMaxValue);
@@ -243,15 +243,15 @@ Terrestrial::Work()
                         to = _state.scanner.to;
                     }
 
-                    auto count = (to - from) / _scanerStep;
+                    auto count = (to - from) / _scannerStep;
                     double rt = ((double)RSSI_BUFFER_SIZE / 2) / count;
-                    uint8_t x = RSSI_BUFFER_SIZE / 2 + ((_scanner5G8->GetFreq() - from) / _scanerStep) * rt;
+                    uint8_t x = RSSI_BUFFER_SIZE / 2 + ((_scanner5G8->GetFreq() - from) / _scannerStep) * rt;
                     if (x < RSSI_BUFFER_SIZE)
                     {
                         _state.scannerState.rssi[x] = _scanner5G8->GetMaxRssi() * _scale5G8;
                     }
 
-                    if (_scanner5G8->IncrementFreq(_scanerStep))
+                    if (_scanner5G8->IncrementFreq(_scannerStep))
                     {
                         auto state5g8 = _scanner5G8->GetRssiState();
                         _state.scannerState.SetMaxFreq5G8(state5g8.freqForMaxValue);
@@ -357,52 +357,52 @@ Terrestrial::ParseCommand(const std::string& command)
                 uint16_t maxFreq = atoi(tmp);
                 strncpy(tmp, buffer + 11, 4);
                 tmp[4] = 0;
-                _scanerFilter = atoi(tmp);
+                _scannerFilter = atoi(tmp);
                 strncpy(tmp, buffer + 16, 2);
                 tmp[2] = 0;
-                _scanerStep  = atoi(tmp);
+                _scannerStep  = atoi(tmp);
 
                 if (minFreq > maxFreq)
                 {
                     std::swap(minFreq, maxFreq);
                 }
 
-                minScaner1G2Freq = 0;
-                maxScaner1G2Freq = 0;
-                minScaner5G8Freq = 0;
-                maxScaner5G8Freq = 0;
+                minScanner1G2Freq = 0;
+                maxScanner1G2Freq = 0;
+                minScanner5G8Freq = 0;
+                maxScanner5G8Freq = 0;
                 if (minFreq <= MAX_1G2_FREQ)
                 {
-                    minScaner1G2Freq = minFreq;
-                    maxScaner1G2Freq = MAX_1G2_FREQ;
+                    minScanner1G2Freq = minFreq;
+                    maxScanner1G2Freq = MAX_1G2_FREQ;
 
                     if (maxFreq > MIN_5G8_FREQ)
                     {
-                        minScaner5G8Freq = MIN_5G8_FREQ;
-                        maxScaner5G8Freq = MAX_5G8_FREQ;
+                        minScanner5G8Freq = MIN_5G8_FREQ;
+                        maxScanner5G8Freq = MAX_5G8_FREQ;
                     }
                 }
 
                 if (maxFreq <= MAX_1G2_FREQ)
                 {
-                    maxScaner1G2Freq = maxFreq;
+                    maxScanner1G2Freq = maxFreq;
                 }
 
                 if (minFreq >= MIN_5G8_FREQ && minFreq <= MAX_5G8_FREQ)
                 {
-                    minScaner5G8Freq = minFreq;
-                    maxScaner5G8Freq = MAX_5G8_FREQ;
+                    minScanner5G8Freq = minFreq;
+                    maxScanner5G8Freq = MAX_5G8_FREQ;
                 }
 
                 if (maxFreq >= MIN_5G8_FREQ && maxFreq <= MAX_5G8_FREQ)
                 {
-                    maxScaner5G8Freq = maxFreq;
+                    maxScanner5G8Freq = maxFreq;
                 }
 
                 _state.scanner.from = minFreq;
                 _state.scanner.to = maxFreq;
-                _state.scanner.step = _scanerStep;
-                _state.scanner.filter = _scanerFilter;
+                _state.scanner.step = _scannerStep;
+                _state.scanner.filter = _scannerFilter;
 
                 return SCANNER;
             }
