@@ -194,8 +194,8 @@ Terrestrial::Work()
                     }
 
                     auto count = (to - from) / _scannerStep;
-                    double rt = ((double)RSSI_BUFFER_SIZE / 2) / count;
-                    uint8_t x = ((_scanner1G2->GetFreq() - from) / _scannerStep) * rt;
+                    double rt = ((double)(RSSI_BUFFER_SIZE - 1) / 2) / count;
+                    uint8_t x = (_scanner1G2->GetFreq() - from) * rt / _scannerStep;
                     if (x < RSSI_BUFFER_SIZE)
                     {
                         _state.scannerState.rssi[x] = _scanner1G2->GetMaxRssi() * _scale1G2;
@@ -244,8 +244,8 @@ Terrestrial::Work()
                     }
 
                     auto count = (to - from) / _scannerStep;
-                    double rt = ((double)RSSI_BUFFER_SIZE / 2) / count;
-                    uint8_t x = RSSI_BUFFER_SIZE / 2 + ((_scanner5G8->GetFreq() - from) / _scannerStep) * rt;
+                    double rt = ((double)(RSSI_BUFFER_SIZE - 1)/ 2) / count;
+                    uint8_t x = RSSI_BUFFER_SIZE / 2 + ((_scanner5G8->GetFreq() - from) * rt / _scannerStep);
                     if (x < RSSI_BUFFER_SIZE)
                     {
                         _state.scannerState.rssi[x] = _scanner5G8->GetMaxRssi() * _scale5G8;
@@ -421,11 +421,21 @@ Terrestrial::CheckRSSI(ANTENNA_TYPE& antenna, uint16_t filterInitCounter)
 
     if (filter == 0) filter = filterInitCounter;
 
-    analogRead(RSSI_5G8_A);
-    rssiASum += analogRead(RSSI_5G8_A);
-    
-    analogRead(RSSI_5G8_B);
-    rssiBSum += analogRead(RSSI_5G8_B);
+    if (_state.receiver.currentFreq >= MIN_5G8_FREQ)
+    {
+        analogRead(RSSI_5G8_A);
+        rssiASum += analogRead(RSSI_5G8_A);
+        analogRead(RSSI_5G8_B);
+        rssiBSum += analogRead(RSSI_5G8_B);
+    }
+    else if (_state.receiver.currentFreq < MAX_1G2_FREQ)
+    {
+        analogRead(RSSI_1G2_A);
+        rssiASum += analogRead(RSSI_1G2_A);
+        analogRead(RSSI_1G2_B);
+        rssiBSum += analogRead(RSSI_1G2_B);
+    }
+
     if (--filter == 0)
     {
         _state.receiverState.rssiA = rssiASum / filterInitCounter;
