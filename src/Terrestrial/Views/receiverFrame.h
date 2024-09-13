@@ -10,10 +10,10 @@ public:
     ReceiverFrame(RECEIVER_SETTINGS* state);
     virtual void SetActive(bool isActive) override;
     virtual void SetCommand(WIDGET_COMMAND_TYPE command) override;
-    void UpdateRSSI(uint16_t rssia, uint16_t rssib)
+    void UpdateRSSI(const RECEIVER_STATE& recState)
     {
-        _rssiA = rssia;
-        _rssiB = rssib;
+        _rssiA = recState.rssiA;
+        _rssiB = recState.rssiB;
     }
 
 protected:

@@ -141,10 +141,10 @@ UserConsole::SendMessage(const std::string& message)
 {
     if (message[0] == 'R')
     {
-        _receiverFrame->UpdateRSSI(_state->rssiA, _state->rssiB);
+        _receiverFrame->UpdateRSSI(_state->receiverState);
     }
     else if (message[0] == 'S')
     {
-        _scannerFrame->UpdateRSSI(_state->rssi);
+        _scannerFrame->UpdateRSSI(&_state->scannerState);
     }
 }

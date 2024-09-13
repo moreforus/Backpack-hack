@@ -50,10 +50,13 @@ private:
     uint16_t maxScaner1G2Freq;
     uint16_t _scanerFilter = 1;
     uint8_t _scanerStep = 1;
-    Scaner* _scaner1G2 = nullptr;
-    Scaner* _scaner5G8 = nullptr;
+    Scaner* _scanner1G2 = nullptr;
+    Scaner* _scanner5G8 = nullptr;
     RemoteConsole* _remoteConsole;
     UserConsole* _userConsole;
     TERRESTRIAL_STATE _state;
     VrxBackpackConfig* _config;
+    bool _isScalingCompleted = false;
+    double _scale1G2 = 1.0;
+    double _scale5G8 = 1.0;
 };

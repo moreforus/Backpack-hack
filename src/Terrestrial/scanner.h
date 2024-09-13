@@ -10,6 +10,13 @@ enum SCANNER_AUTO_TYPE : uint8_t
     MEASURE,
 };
 
+struct ScannerRssiState_t
+{
+    uint16_t rssiMin;
+    uint16_t rssiMax;
+    uint16_t freqForMaxValue;
+};
+
 typedef void (*worker)(uint16_t);
 
 class Scaner {
@@ -30,6 +37,7 @@ public:
         _filter = 0;
         _rssiASum = 0;
         _rssiBSum = 0;
+        ResetScannerRssiState();
     }
 
     void SetFreq(uint16_t filterInitCounter)
@@ -58,13 +66,37 @@ public:
             _rssiA = _rssiASum / _filterInitCounter;
             _rssiB = _rssiBSum / _filterInitCounter;
 
-            if (_rssiA - _rssiB > _rssiDiff)
+            if (_rssiA >= _rssiB)
             {
                 _currentAntenna = ANT_A;
+                if (_scannerRssiState.rssiMax < _rssiA)
+                {
+                    _scannerRssiState.rssiMax = _rssiA;
+                    _scannerRssiState.freqForMaxValue = _scanerFreq;
+                }
+
+                /*if (_rssiB > 50 && _rssiB < _scannerRssiState.rssiMin)
+                {
+                    _scannerRssiState.rssiMin = _rssiB;
+                }*/
+                if (_rssiA < _scannerRssiState.rssiMin)
+                {
+                    _scannerRssiState.rssiMin = _rssiA;
+                }
             }
-            else if (_rssiB - _rssiA > _rssiDiff)
+            else
             {
                 _currentAntenna = ANT_B;
+                if (_scannerRssiState.rssiMax < _rssiB)
+                {
+                    _scannerRssiState.rssiMax = _rssiB;
+                    _scannerRssiState.freqForMaxValue = _scanerFreq;
+                }
+
+                if (_rssiA < _scannerRssiState.rssiMin)
+                {
+                    _scannerRssiState.rssiMin = _rssiA;
+                }
             }
 
             _rssiASum = 0;
@@ -74,6 +106,11 @@ public:
         }
  
         return false;
+    }
+
+    uint16_t GetMaxRssi() const
+    {
+        return _rssiA > _rssiB ? _rssiA : _rssiB;
     }
 
     uint16_t GetRssiA() const
@@ -95,13 +132,28 @@ public:
         return str;
     }
 
-    void IncrementFreq(uint8_t step)
+    bool IncrementFreq(uint8_t step)
     {
         _scanerFreq += step;
         if (_scanerFreq > _maxFreq)
         {
             _scanerFreq = _minFreq;
+            return true;
         }
+
+        return false;
+    }
+
+    ScannerRssiState_t GetRssiState() const
+    {
+        return _scannerRssiState;
+    }
+
+    void ResetScannerRssiState()
+    {
+        _scannerRssiState.rssiMin = 4096;
+        _scannerRssiState.rssiMax = 0;
+        _scannerRssiState.freqForMaxValue = 0;
     }
 
 private:
@@ -119,4 +171,5 @@ private:
     const uint8_t _rssiDiff;
     ANTENNA_TYPE _currentAntenna;
     uint16_t _filterInitCounter;
+    ScannerRssiState_t _scannerRssiState;    
 };

@@ -34,7 +34,7 @@ Terrestrial::Init()
     pinMode(PIN_1G2_CS, INPUT);
     pinMode(VIDEO_CTRL, OUTPUT);
 
-    memset(_state.rssi, 0, sizeof(_state.rssi));
+    memset(_state.scannerState.rssi, 0, sizeof(_state.scannerState.rssi));
 
     DBGLN("Terrestrial init complete");
     _remoteConsole = new RemoteConsole(921600);
@@ -43,8 +43,8 @@ Terrestrial::Init()
     _userConsole = new UserConsole(&_state);
     _userConsole->Init();
 
-    _scaner1G2 = new Scaner(rtc6712SetFreq, RSSI_1G2_A, RSSI_1G2_B, RSSI_DIFF_BORDER);
-    _scaner5G8 = new Scaner(rtc6715SetFreq, RSSI_5G8_A, RSSI_5G8_B, RSSI_DIFF_BORDER);
+    _scanner1G2 = new Scaner(rtc6712SetFreq, RSSI_1G2_A, RSSI_1G2_B, RSSI_DIFF_BORDER);
+    _scanner5G8 = new Scaner(rtc6715SetFreq, RSSI_5G8_A, RSSI_5G8_B, RSSI_DIFF_BORDER);
 }
 
 void
@@ -126,8 +126,7 @@ Terrestrial::MakeMessage(const char* cmd, const uint16_t freq)
 {
     uint64_t us = micros();
     char str[48];
-    sprintf(str, "%s:%d[%d:%d]%d>%llu\r\n", cmd, freq, _state.rssiA, _state.rssiB, currentAntenna, us);
-    //sprintf(str, "%s:%d[%d:%d]%d>0\r\n", cmd, freq, _state.rssiA, _state.rssiB, currentAntenna);
+    sprintf(str, "%s:%d[%d:%d]%d>%llu\r\n", cmd, freq, _state.receiverState.rssiA, _state.receiverState.rssiB, currentAntenna, us);
     
     return str;
 }
@@ -158,10 +157,10 @@ Terrestrial::Work()
         switch (scannerAuto)
         {
             case INIT:
-                _scaner1G2->Init(minScaner1G2Freq, maxScaner1G2Freq);
-                _scaner5G8->Init(minScaner5G8Freq, maxScaner5G8Freq);
-
+                _scanner1G2->Init(minScaner1G2Freq, maxScaner1G2Freq);
+                _scanner5G8->Init(minScaner5G8Freq, maxScaner5G8Freq);
                 scannerAuto = SET_FREQ_1G2;
+                _isScalingCompleted = false;
             break;
             case SET_FREQ_1G2:
                 if (!SPIModeEnabled) 
@@ -169,20 +168,19 @@ Terrestrial::Work()
                     EnableSPIMode();
                 }
 
-                _scaner1G2->SetFreq(_scanerFilter);
+                _scanner1G2->SetFreq(_scanerFilter);
                 scannerAuto = SET_FREQ_5G8;
             break;
 
             case SET_FREQ_5G8:
-                _scaner5G8->SetFreq(_scanerFilter);
+                _scanner5G8->SetFreq(_scanerFilter);
                 scannerAuto = MEASURE;
             break;
 
             case MEASURE:
-                if (_scaner1G2->MeasureRSSI())
+                if (_scanner1G2->MeasureRSSI())
                 {
-                    message = _scaner1G2->MakeMessage();
-
+                    message = _scanner1G2->MakeMessage();
                     uint16_t from = MIN_1G2_FREQ;
                     uint16_t to = MAX_1G2_FREQ;
                     if (_state.scanner.from < MAX_1G2_FREQ)
@@ -197,15 +195,42 @@ Terrestrial::Work()
 
                     auto count = (to - from) / _scanerStep;
                     double rt = ((double)RSSI_BUFFER_SIZE / 2) / count;
-                    uint8_t x = ((_scaner1G2->GetFreq() - from) / _scanerStep) * rt;
-                    _state.rssi[x] = _scaner1G2->GetRssiA();
+                    uint8_t x = ((_scanner1G2->GetFreq() - from) / _scanerStep) * rt;
+                    if (x < RSSI_BUFFER_SIZE)
+                    {
+                        _state.scannerState.rssi[x] = _scanner1G2->GetMaxRssi() * _scale1G2;
+                    }
 
-                    _scaner1G2->IncrementFreq(_scanerStep);
+                    if (_scanner1G2->IncrementFreq(_scanerStep))
+                    {
+                        auto state1g2 = _scanner1G2->GetRssiState();
+                        _state.scannerState.SetMaxFreq1G2(state1g2.freqForMaxValue);
+                        if (!_isScalingCompleted)
+                        {
+                            _isScalingCompleted = true;
+
+                            auto state5g8 = _scanner5G8->GetRssiState();
+                            _scale1G2 = 1.0;
+                            _scale5G8 = 1.0;
+                            if (state1g2.rssiMin > state5g8.rssiMin)
+                            {
+                                _scale1G2 = (double)state5g8.rssiMin / state1g2.rssiMin;
+                                _scale5G8 = 1.0;
+                            }
+                            else if (state1g2.rssiMin < state5g8.rssiMin)
+                            {
+                                _scale5G8 = (double)state1g2.rssiMin / state5g8.rssiMin;
+                                _scale1G2 = 1.0;
+                            }
+                        }
+
+                        _scanner1G2->ResetScannerRssiState();
+                    }
                 }
 
-                if (_scaner5G8->MeasureRSSI())
+                if (_scanner5G8->MeasureRSSI())
                 {
-                    message += _scaner5G8->MakeMessage();
+                    message += _scanner5G8->MakeMessage();
                     uint16_t from = MIN_5G8_FREQ;
                     uint16_t to = MAX_5G8_FREQ;
                     if (_state.scanner.from >= MIN_5G8_FREQ)
@@ -220,10 +245,19 @@ Terrestrial::Work()
 
                     auto count = (to - from) / _scanerStep;
                     double rt = ((double)RSSI_BUFFER_SIZE / 2) / count;
-                    uint8_t x = ((_scaner5G8->GetFreq() - from) / _scanerStep) * rt;
-                    _state.rssi[RSSI_BUFFER_SIZE / 2 + x] = _scaner5G8->GetRssiA();
+                    uint8_t x = RSSI_BUFFER_SIZE / 2 + ((_scanner5G8->GetFreq() - from) / _scanerStep) * rt;
+                    if (x < RSSI_BUFFER_SIZE)
+                    {
+                        _state.scannerState.rssi[x] = _scanner5G8->GetMaxRssi() * _scale5G8;
+                    }
 
-                    _scaner5G8->IncrementFreq(_scanerStep);
+                    if (_scanner5G8->IncrementFreq(_scanerStep))
+                    {
+                        auto state5g8 = _scanner5G8->GetRssiState();
+                        _state.scannerState.SetMaxFreq5G8(state5g8.freqForMaxValue);
+                        _scanner5G8->GetRssiState();
+                    }
+
                     scannerAuto = SET_FREQ_1G2;
                 }
                 
@@ -394,14 +428,14 @@ Terrestrial::CheckRSSI(ANTENNA_TYPE& antenna, uint16_t filterInitCounter)
     rssiBSum += analogRead(RSSI_5G8_B);
     if (--filter == 0)
     {
-        _state.rssiA = rssiASum / filterInitCounter;
-        _state.rssiB = rssiBSum / filterInitCounter;
+        _state.receiverState.rssiA = rssiASum / filterInitCounter;
+        _state.receiverState.rssiB = rssiBSum / filterInitCounter;
 
-        if (_state.rssiA - _state.rssiB > RSSI_DIFF_BORDER)
+        if (_state.receiverState.rssiA - _state.receiverState.rssiB > RSSI_DIFF_BORDER)
         {
             antenna = ANT_A;
         }
-        else if (_state.rssiB - _state.rssiA > RSSI_DIFF_BORDER)
+        else if (_state.receiverState.rssiB - _state.receiverState.rssiA > RSSI_DIFF_BORDER)
         {
             antenna = ANT_B;
         }
