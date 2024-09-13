@@ -8,7 +8,7 @@
 ReceiverFrame::ReceiverFrame(RECEIVER_SETTINGS* dataModel)
     : _dataModel(dataModel)
 {
-    auto edit = new EditBox(dataModel->currentFreq, 900, 6000, 30, 18, 30, 10);
+    auto edit = new EditBox(dataModel->currentFreq, 900, 6000, 30, 18, 30, 11);
     edit->OnEditCompeted([&](EditBox* sender, uint16_t value)
     {
         _dataModel->currentFreq = value;
@@ -27,7 +27,7 @@ ReceiverFrame::ReceiverFrame(RECEIVER_SETTINGS* dataModel)
     });
     _children.push_back(btn);
 
-    btn = new Button("X", 112, 0, 16, 16);
+    btn = new Button("X", 112, 0, 15, 15);
     btn->SetVisibility(false);
     btn->OnButtonPressed([&]()
     {

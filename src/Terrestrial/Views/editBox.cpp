@@ -88,7 +88,7 @@ void EditBox::Active(OLEDDisplay* display,  OLEDDisplayUiState* state, int16_t x
     auto tmp = std::to_string(_value);
     display->drawString(_x + x, _y + y, tmp.c_str());
     display->setColor(INVERSE);
-    display->fillRect(_x + x, _y + y + 2, _width, _height);
+    display->fillRect(_x + x - 2, _y + y + 1, _width, _height);
     display->setColor(WHITE);
 }
 
