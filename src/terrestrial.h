@@ -59,4 +59,6 @@ private:
     bool _isScalingCompleted = false;
     double _scale1G2 = 1.0;
     double _scale5G8 = 1.0;
+    uint8_t _preX1g2;
+    uint8_t _preX5g8;
 };

@@ -161,6 +161,10 @@ Terrestrial::Work()
                 _scanner5G8->Init(minScanner5G8Freq, maxScanner5G8Freq);
                 scannerAuto = SET_FREQ_1G2;
                 _isScalingCompleted = false;
+                _preX1g2 = 0;
+                _preX5g8 = RSSI_BUFFER_SIZE / 2;
+                _state.scannerState.rssi[_preX1g2] = 0;
+                _state.scannerState.rssi[_preX5g8] = 0;
             break;
             case SET_FREQ_1G2:
                 if (!SPIModeEnabled) 
@@ -198,7 +202,21 @@ Terrestrial::Work()
                     uint8_t x = (_scanner1G2->GetFreq() - from) * rt / _scannerStep;
                     if (x < RSSI_BUFFER_SIZE)
                     {
-                        _state.scannerState.rssi[x] = _scanner1G2->GetMaxRssi() * _scale1G2;
+                        if (x != _preX1g2)
+                        {
+                            _preX1g2 = x;
+                            _state.scannerState.rssi[_preX1g2] = 0;
+                            if (x < RSSI_BUFFER_SIZE / 2 - 1)
+                            {
+                                _state.scannerState.rssi[_preX1g2 + 1]= 0;
+                            }
+                        }
+
+                        uint16_t rssi = _scanner1G2->GetMaxRssi() * _scale1G2;
+                        if (rssi > _state.scannerState.rssi[x])
+                        {
+                            _state.scannerState.rssi[x] = rssi;
+                        }
                     }
 
                     if (_scanner1G2->IncrementFreq(_scannerStep))
@@ -244,11 +262,25 @@ Terrestrial::Work()
                     }
 
                     auto count = (to - from) / _scannerStep;
-                    double rt = ((double)(RSSI_BUFFER_SIZE - 1)/ 2) / count;
+                    double rt = ((double)(RSSI_BUFFER_SIZE - 1) / 2) / count;
                     uint8_t x = RSSI_BUFFER_SIZE / 2 + ((_scanner5G8->GetFreq() - from) * rt / _scannerStep);
                     if (x < RSSI_BUFFER_SIZE)
                     {
-                        _state.scannerState.rssi[x] = _scanner5G8->GetMaxRssi() * _scale5G8;
+                        if (x != _preX5g8)
+                        {
+                            _preX5g8 = x;
+                            _state.scannerState.rssi[_preX5g8] = 0;
+                            if (x < RSSI_BUFFER_SIZE - 1)
+                            {
+                                _state.scannerState.rssi[_preX5g8 + 1] = 0;
+                            }
+                        }
+
+                        uint16_t rssi = _scanner5G8->GetMaxRssi() * _scale5G8;
+                        if (rssi > _state.scannerState.rssi[x])
+                        {
+                            _state.scannerState.rssi[x] = rssi;
+                        }
                     }
 
                     if (_scanner5G8->IncrementFreq(_scannerStep))
