@@ -14,8 +14,7 @@ enum WORK_MODE_TYPE : uint8_t
     SCANNER,
 };
 
-class RemoteConsole;
-class UserConsole;
+class IConsole;
 class VrxBackpackConfig;
 class Terrestrial : public ModuleBase
 {
@@ -52,8 +51,8 @@ private:
     uint8_t _scannerStep = 1;
     Scanner* _scanner1G2 = nullptr;
     Scanner* _scanner5G8 = nullptr;
-    RemoteConsole* _remoteConsole;
-    UserConsole* _userConsole;
+    IConsole* _remoteConsole;
+    IConsole* _userConsole;
     TERRESTRIAL_STATE _state;
     VrxBackpackConfig* _config;
     bool _isScalingCompleted = false;
