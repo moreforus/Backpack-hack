@@ -123,15 +123,6 @@ public:
         return _rssiB;
     }
 
-    std::string MakeMessage()
-    {
-        uint64_t us = micros();
-        char str[48];
-        sprintf(str, "S:%d[%d:%d]%d>%llu\r\n", _scannerFreq, _rssiA, _rssiB, _currentAntenna, us);
-    
-        return str;
-    }
-
     bool IncrementFreq(uint8_t step)
     {
         _scannerFreq += step;

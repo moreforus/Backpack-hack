@@ -18,7 +18,8 @@ struct SCANNER_SETTINGS
 
 struct DEVICE_STATE
 {
-    uint8_t cpu;
+    uint8_t cpu0;
+    uint8_t cpu1;
     uint8_t i2c;
     uint8_t battery;
     connectionState_e connectionState;

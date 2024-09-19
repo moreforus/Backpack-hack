@@ -22,8 +22,10 @@ void DeviceFrame::Preview(OLEDDisplay* display,  OLEDDisplayUiState* state, int1
     display->drawString(0 + x, 28 + y, "I2C:");
     display->drawString(0 + x, 38 + y, "Con:");
 
-    auto tmp = std::to_string(_dataModel->cpu);
+    auto tmp = std::to_string(_dataModel->cpu0);
     display->drawString((tmp.size() == 1 ? 35 : 30) + x, 18 + y, tmp.c_str());
+    tmp = std::to_string(_dataModel->cpu1);
+    display->drawString((tmp.size() == 1 ? 55 : 50) + x, 18 + y, tmp.c_str());
     tmp = std::to_string(_dataModel->i2c);
     display->drawString((tmp.size() == 1 ? 34 : 30) + x, 28 + y, tmp.c_str());
 

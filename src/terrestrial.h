@@ -6,13 +6,7 @@
 #include <Terrestrial/scanner.h>
 #include <Terrestrial/antennaType.h>
 #include <Terrestrial/DataModel/terrestrialState.h>
-
-enum WORK_MODE_TYPE : uint8_t
-{
-    NONE = 0,
-    RECEIVER,
-    SCANNER,
-};
+#include <Terrestrial/workMode.h>
 
 class IConsole;
 class VrxBackpackConfig;
@@ -31,10 +25,8 @@ private:
     void EnableSPIMode();
     bool CheckRSSI(ANTENNA_TYPE& antenna, uint16_t filterInitCounter);
     void SwitchVideo(ANTENNA_TYPE antenna);
-    WORK_MODE_TYPE ParseCommand(const std::string& command);
     void SetWorkMode(WORK_MODE_TYPE mode);
-    std::string Work();
-    std::string MakeMessage(const char* cmd, const uint16_t freq);
+    void Work();
     void SetFreq(uint16_t freq);
     void SaveConfig();
 
@@ -51,8 +43,6 @@ private:
     uint8_t _scannerStep = 1;
     Scanner* _scanner1G2 = nullptr;
     Scanner* _scanner5G8 = nullptr;
-    IConsole* _remoteConsole;
-    IConsole* _userConsole;
     TERRESTRIAL_STATE _state;
     VrxBackpackConfig* _config;
     bool _isScalingCompleted = false;

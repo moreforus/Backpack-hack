@@ -3,10 +3,9 @@
 #include "logging.h"
 #include <rtc6715.h>
 #include <lib_rtc6712.h>
-#include <Terrestrial/remoteConsole.h>
-#include <Terrestrial/userConsole.h>
 #include <common.h>
 #include "config.h"
+#include <Terrestrial/consoleTask.h>
 
 #define RSSI_DIFF_BORDER (16)
 
@@ -15,6 +14,9 @@
 
 #define MIN_5G8_FREQ (4900)
 #define MAX_5G8_FREQ (6000)
+
+extern QueueHandle_t commandQueue;
+extern QueueHandle_t responseQueue;
 
 void
 Terrestrial::Init()
@@ -37,11 +39,8 @@ Terrestrial::Init()
     memset(_state.scannerState.rssi, 0, sizeof(_state.scannerState.rssi));
 
     DBGLN("Terrestrial init complete");
-    _remoteConsole = new RemoteConsole(921600);
-    _remoteConsole->Init();
 
-    _userConsole = new UserConsole(&_state);
-    _userConsole->Init();
+    xTaskCreatePinnedToCore(consoleTask, "task", 3000, (void*)&_state, 1, NULL, 0);
 
     _scanner1G2 = new Scanner(rtc6712SetFreq, RSSI_1G2_A, RSSI_1G2_B, RSSI_DIFF_BORDER);
     _scanner5G8 = new Scanner(rtc6715SetFreq, RSSI_5G8_A, RSSI_5G8_B, RSSI_DIFF_BORDER);
@@ -121,22 +120,13 @@ Terrestrial::SetWorkMode(WORK_MODE_TYPE mode)
     }
 }
 
-std::string
-Terrestrial::MakeMessage(const char* cmd, const uint16_t freq)
-{
-    uint64_t us = micros();
-    char str[48];
-    sprintf(str, "%s:%d[%d:%d]%d>%llu\r\n", cmd, freq, _state.receiverState.rssiA, _state.receiverState.rssiB, currentAntenna, us);
-    
-    return str;
-}
-
 #define DEFAULT_RECEIVER_FILTER (8)
 
-std::string
+void
 Terrestrial::Work()
 {
-    std::string message;
+    TerrestrialResponse_t response;
+    response.work = WORK_MODE_TYPE::NONE;
 
     if (workMode == RECEIVER)
     {
@@ -149,7 +139,10 @@ Terrestrial::Work()
                 SwitchVideo(currentAntenna);
             }
 
-            message = MakeMessage("R", _state.receiver.currentFreq);
+            response.work = WORK_MODE_TYPE::RECEIVER;
+            response.freq = _state.receiver.currentFreq;
+            response.antenna = currentAntenna;
+            xQueueSend(responseQueue, (void*)&response, 0);
         }
     }
     else if (workMode == SCANNER)
@@ -184,7 +177,13 @@ Terrestrial::Work()
             case MEASURE:
                 if (_scanner1G2->MeasureRSSI())
                 {
-                    message = _scanner1G2->MakeMessage();
+                    response.work = WORK_MODE_TYPE::SCANNER;
+                    response.freq = _scanner1G2->GetFreq();
+                    response.rssiA = _scanner1G2->GetRssiA();
+                    response.rssiB = _scanner1G2->GetRssiB();
+                    response.antenna = 0;
+                    xQueueSend(responseQueue, (void*)&response, 0);
+
                     uint16_t from = MIN_1G2_FREQ;
                     uint16_t to = MAX_1G2_FREQ;
                     if (_state.scanner.from < MAX_1G2_FREQ)
@@ -248,7 +247,13 @@ Terrestrial::Work()
 
                 if (_scanner5G8->MeasureRSSI())
                 {
-                    message += _scanner5G8->MakeMessage();
+                    response.work = WORK_MODE_TYPE::SCANNER;
+                    response.freq = _scanner5G8->GetFreq();
+                    response.rssiA = _scanner5G8->GetRssiA();
+                    response.rssiB = _scanner5G8->GetRssiB();
+                    response.antenna = 0;
+                    xQueueSend(responseQueue, (void*)&response, 0);
+
                     uint16_t from = MIN_5G8_FREQ;
                     uint16_t to = MAX_5G8_FREQ;
                     if (_state.scanner.from >= MIN_5G8_FREQ)
@@ -296,8 +301,6 @@ Terrestrial::Work()
             break;
         }
     }
-
-    return message;
 }
 
 void Terrestrial::SaveConfig()
@@ -317,93 +320,24 @@ Terrestrial::Loop(uint32_t now)
     auto usStart = micros();
     ModuleBase::Loop(now);
 
-    _remoteConsole->Loop();
-    auto command = _remoteConsole->GetCommand();
-    if (!command.empty())
+    TerrestrialCommand_t cmd;
+    if (xQueueReceive(commandQueue, &cmd, 0))
     {
-        auto mode = ParseCommand(command);
-        SetWorkMode(mode);
-        SaveConfig();
-    }
-
-    if (currentTimeMs == now)
-    {
-        return;
-    }
-
-    currentTimeMs = now;
-
-    auto usI2CStart = micros();
-    _userConsole->Loop();
-    command = _userConsole->GetCommand();
-    if (!command.empty())
-    {
-        auto mode = ParseCommand(command);
-        SetWorkMode(mode);
-        SaveConfig();
-    }
-    auto usStop = micros();
-    uint8_t i2c = (usStop - usI2CStart) / 10;
-    _state.device.i2c = i2c > 100 ? 100 : i2c;
-
-    auto answer = Work();
-    if (!answer.empty())
-    {
-        _remoteConsole->SendMessage(answer);
-        _userConsole->SendMessage(answer);
-    }
-
-    usStop = micros();
-    uint8_t cpu = (usStop - usStart) / 10;
-    _state.device.cpu = cpu > 100 ? 100 : cpu;
-
-    _state.device.connectionState = connectionState;
-}
-
-WORK_MODE_TYPE
-Terrestrial::ParseCommand(const std::string& command)
-{
-    // Rxxxx\n -- set receiving on xxxx freq
-    // Sxxxx:yyyy:dddd:ii\n -- set scanner mode from [xxxx] to [yyyy] with step [ii] MHz freq with delay [dddd] ms on each freq
-    if (!command.empty())
-    {
-        if (command[0] == 'R')
+        if (cmd.work == WORK_MODE_TYPE::RECEIVER)
         {
-            if (command.size() >= 4)
-            {
-                _state.receiver.currentFreq = atoi(command.c_str() + 1);
-                return RECEIVER;
-            }
+            _state.receiver.currentFreq = cmd.freq;
+            SetWorkMode(cmd.work);
+            SaveConfig();
         }
-        else if (command[0] == 'S')
+        else if (cmd.work == WORK_MODE_TYPE::SCANNER)
         {
-            if (command.size() >= 17)
-            {
-                char tmp[5];
-                auto buffer = command.c_str();
-                strncpy(tmp, buffer + 1, 4);
-                tmp[4] = 0;
-                uint16_t minFreq = atoi(tmp);
-                strncpy(tmp, buffer + 6, 4);
-                tmp[4] = 0;
-                uint16_t maxFreq = atoi(tmp);
-                strncpy(tmp, buffer + 11, 4);
-                tmp[4] = 0;
-                _scannerFilter = atoi(tmp);
-                strncpy(tmp, buffer + 16, 2);
-                tmp[2] = 0;
-                _scannerStep  = atoi(tmp);
-
-                if (minFreq > maxFreq)
-                {
-                    std::swap(minFreq, maxFreq);
-                }
-
-                minScanner1G2Freq = 0;
-                maxScanner1G2Freq = 0;
-                minScanner5G8Freq = 0;
-                maxScanner5G8Freq = 0;
-                if (minFreq <= MAX_1G2_FREQ)
+            uint16_t minFreq = cmd.scannerFrom;
+            uint16_t maxFreq = cmd.scannerTo;
+            minScanner1G2Freq = 0;
+            maxScanner1G2Freq = 0;
+            minScanner5G8Freq = 0;
+            maxScanner5G8Freq = 0;
+            if (minFreq <= MAX_1G2_FREQ)
                 {
                     minScanner1G2Freq = minFreq;
                     maxScanner1G2Freq = MAX_1G2_FREQ;
@@ -431,17 +365,30 @@ Terrestrial::ParseCommand(const std::string& command)
                     maxScanner5G8Freq = maxFreq;
                 }
 
-                _state.scanner.from = minFreq;
-                _state.scanner.to = maxFreq;
-                _state.scanner.step = _scannerStep;
-                _state.scanner.filter = _scannerFilter;
-
-                return SCANNER;
-            }
+            _state.scanner.from = minFreq;
+            _state.scanner.to = maxFreq;
+            _scannerStep = cmd.scannerStep;
+            _scannerFilter = cmd.scannerFilter;
+            _state.scanner.step = _scannerStep;
+            _state.scanner.filter = _scannerFilter;
+            SetWorkMode(cmd.work);
+            SaveConfig();            
         }
     }
-    
-    return NONE;
+
+    if (currentTimeMs == now)
+    {
+        return;
+    }
+
+    currentTimeMs = now;
+    auto usStop = micros();
+    Work();
+
+    usStop = micros();
+    uint8_t cpu = (usStop - usStart) / 10;
+    _state.device.cpu1 = cpu > 100 ? 100 : cpu;
+    _state.device.connectionState = connectionState;
 }
 
 bool 
