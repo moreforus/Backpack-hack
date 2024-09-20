@@ -1,8 +1,7 @@
 #pragma once
-#include <Arduino.h>
-#include <OLEDDisplay.h>
-#include <OLEDDisplayUi.h>
 
+class OLEDDisplay;
+class OLEDDisplayUiState;
 class IOverlay
 {
 public:

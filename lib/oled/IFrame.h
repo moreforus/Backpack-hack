@@ -1,8 +1,8 @@
 #pragma once
-#include <Arduino.h>
-#include <OLEDDisplay.h>
-#include <OLEDDisplayUi.h>
+#include <cstdlib>
 
+class OLEDDisplay;
+class OLEDDisplayUiState;
 class IFrame
 {
 public:

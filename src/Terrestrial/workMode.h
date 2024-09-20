@@ -1,5 +1,4 @@
 #pragma once
-#include <Arduino.h>
 
 enum WORK_MODE_TYPE : uint8_t
 {

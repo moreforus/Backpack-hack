@@ -1,5 +1,4 @@
 #pragma once
-#include <Arduino.h>
 #include <Terrestrial/IConsole.h>
 #include <mutex>
 #include <string>

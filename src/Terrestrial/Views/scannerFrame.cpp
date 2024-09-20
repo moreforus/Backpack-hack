@@ -2,6 +2,7 @@
 #include <string>
 #include <Terrestrial\Views\button.h>
 #include <Terrestrial\Views\editBox.h>
+#include <OLEDDisplay.h>
 
 ScannerFrame::ScannerFrame(SCANNER_SETTINGS* dataModel)
     : _dataModel(dataModel)

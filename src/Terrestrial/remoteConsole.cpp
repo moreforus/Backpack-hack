@@ -1,3 +1,4 @@
+#include <Arduino.h>
 #include <Terrestrial/remoteConsole.h>
 
 RemoteConsole::RemoteConsole(unsigned long baud)

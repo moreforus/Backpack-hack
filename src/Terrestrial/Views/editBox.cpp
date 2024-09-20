@@ -1,4 +1,5 @@
 #include <Terrestrial/Views/editBox.h>
+#include <OLEDDisplay.h>
 
 EditBox::EditBox(uint16_t value, uint16_t min, uint16_t max, uint8_t x, uint8_t y, uint8_t width, uint8_t height)
     : ChildWidget(x, y, width, height), _value(value), _minValue(min), _maxValue(max)

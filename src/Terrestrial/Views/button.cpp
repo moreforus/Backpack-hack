@@ -1,4 +1,5 @@
 #include <Terrestrial/Views/button.h>
+#include <OLEDDisplay.h>
 
 Button::Button(const std::string& caption, uint8_t x, uint8_t y, uint8_t width, uint8_t height)
     : ChildWidget(x, y, width, height), _caption(caption)

@@ -1,5 +1,4 @@
 #pragma once
-#include <Arduino.h>
 #include <Terrestrial/Views/baseFrame.h>
 
 class OLEDDisplay;

@@ -1,4 +1,4 @@
-#include <Arduino.h>
+#pragma once
 #include <Terrestrial/antennaType.h>
 
 enum SCANNER_AUTO_TYPE : uint8_t

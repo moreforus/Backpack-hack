@@ -1,5 +1,4 @@
 #pragma once
-#include <Arduino.h>
 
 enum ANTENNA_TYPE : uint8_t
 {
