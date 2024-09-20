@@ -41,7 +41,7 @@ Terrestrial::Init()
 
     DBGLN("Terrestrial init complete");
 
-    xTaskCreatePinnedToCore(consoleTask, "task", 3000, (void*)&_state, 1, NULL, 0);
+    xTaskCreatePinnedToCore(consoleTask, "consoleTask", 5000, (void*)&_state, 1, NULL, 0);
 
     _scanner1G2 = new Scanner(rtc6712SetFreq, RSSI_1G2_A, RSSI_1G2_B, RSSI_DIFF_BORDER);
     _scanner5G8 = new Scanner(rtc6715SetFreq, RSSI_5G8_A, RSSI_5G8_B, RSSI_DIFF_BORDER);

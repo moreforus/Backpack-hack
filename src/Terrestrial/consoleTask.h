@@ -100,6 +100,8 @@ void consoleTask(void* params)
 
     for (;;)
     {
+        vTaskDelay(1 / portTICK_PERIOD_MS);
+
         auto usStart = micros();
         uint32_t now = usStart / 1000;
 
