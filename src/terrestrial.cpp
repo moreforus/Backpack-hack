@@ -16,9 +16,6 @@
 #define MIN_5G8_FREQ (4900)
 #define MAX_5G8_FREQ (6000)
 
-extern QueueHandle_t commandQueue;
-extern QueueHandle_t responseQueue;
-
 void
 Terrestrial::Init()
 {
@@ -45,6 +42,8 @@ Terrestrial::Init()
 
     _scanner1G2 = new Scanner(rtc6712SetFreq, RSSI_1G2_A, RSSI_1G2_B, RSSI_DIFF_BORDER);
     _scanner5G8 = new Scanner(rtc6715SetFreq, RSSI_5G8_A, RSSI_5G8_B, RSSI_DIFF_BORDER);
+    
+    EnableSPIMode();
 }
 
 void
@@ -59,8 +58,6 @@ Terrestrial::EnableSPIMode()
     digitalWrite(PIN_CLK, LOW);
     digitalWrite(PIN_5G8_CS, HIGH);
     digitalWrite(PIN_1G2_CS, HIGH);
-
-    _isSPIModeEnabled = true;
 
     DBGLN("SPI config complete");
 }
@@ -87,10 +84,6 @@ Terrestrial::SendIndexCmd(uint8_t index)
     DBGLN("%x", index);
 
     _state.receiver.currentFreq = frequencyTable[index];
-    if (!_isSPIModeEnabled) 
-    {
-        EnableSPIMode();
-    }
 
     SetFreq(_state.receiver.currentFreq);
     SaveConfig();
@@ -112,11 +105,6 @@ Terrestrial::SetWorkMode(WORK_MODE_TYPE mode)
     }
     else if (_workMode == RECEIVER)
     {
-        if (!_isSPIModeEnabled) 
-        {
-            EnableSPIMode();
-        }
-
         SetFreq(_state.receiver.currentFreq);
     }
 }
@@ -264,11 +252,6 @@ Terrestrial::Work()
                 _state.scannerState.rssi[_preX5g8] = 0;
             break;
             case SET_FREQ_1G2:
-                if (!_isSPIModeEnabled) 
-                {
-                    EnableSPIMode();
-                }
-
                 _scanner1G2->SetFreq(_scannerFilter);
                 _scannerAuto = SET_FREQ_5G8;
             break;
@@ -433,9 +416,7 @@ Terrestrial::CheckRSSI(ANTENNA_TYPE& antenna, uint16_t filterInitCounter)
 
     if (_state.receiver.currentFreq >= MIN_5G8_FREQ)
     {
-        analogRead(RSSI_5G8_A);
         rssiASum += analogRead(RSSI_5G8_A);
-        analogRead(RSSI_5G8_B);
         rssiBSum += analogRead(RSSI_5G8_B);
     }
     else if (_state.receiver.currentFreq < MAX_1G2_FREQ)

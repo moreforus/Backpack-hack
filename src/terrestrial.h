@@ -31,8 +31,6 @@ private:
     TerrestrialResponse_t ScannerMeasure(Scanner* _scanner);
     void PrepareBufferForDraw1G2();
     void PrepareBufferForDraw5G8();
-
-    bool _isSPIModeEnabled = false;
     ANTENNA_TYPE _currentAntenna = ANT_A;
     uint32_t _currentTimeMs = 0;
     WORK_MODE_TYPE _workMode = RECEIVER;
