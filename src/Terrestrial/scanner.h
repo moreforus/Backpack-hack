@@ -1,6 +1,5 @@
 #include <Arduino.h>
 #include <Terrestrial/antennaType.h>
-#include <string>
 
 enum SCANNER_AUTO_TYPE : uint8_t
 {
@@ -47,7 +46,7 @@ public:
         _filter = filterInitCounter;
     }
 
-    uint16_t GetFreq() const
+    uint16_t inline GetFreq() const
     {
         return _scannerFreq;
     }
@@ -108,17 +107,17 @@ public:
         return false;
     }
 
-    uint16_t GetMaxRssi() const
+    uint16_t inline GetMaxRssi() const
     {
         return _rssiA > _rssiB ? _rssiA : _rssiB;
     }
 
-    uint16_t GetRssiA() const
+    uint16_t inline GetRssiA() const
     {
         return _rssiA;
     }
 
-    uint16_t GetRssiB() const
+    uint16_t inline GetRssiB() const
     {
         return _rssiB;
     }
@@ -135,7 +134,7 @@ public:
         return false;
     }
 
-    ScannerRssiState_t GetRssiState() const
+    ScannerRssiState_t inline GetRssiState() const
     {
         return _scannerRssiState;
     }

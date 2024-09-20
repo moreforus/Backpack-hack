@@ -71,6 +71,16 @@ MakeMessage(const TerrestrialResponse_t& response)
     return str;
 }
 
+static void
+PushCommandToQueue(const std::string& command)
+{
+    if (!command.empty())
+    {
+        auto mode = ParseCommand(command);
+        xQueueSend(commandQueue, (void *) &mode, (TickType_t)0);
+    }
+}
+
 void consoleTask(void* params)
 {
     IConsole* _remoteConsole;
@@ -91,14 +101,11 @@ void consoleTask(void* params)
     for (;;)
     {
         auto usStart = micros();
-        uint32_t now = millis();
+        uint32_t now = usStart / 1000;
+
         _remoteConsole->Loop();
         auto command = _remoteConsole->GetCommand();
-        if (!command.empty())
-        {
-            auto mode = ParseCommand(command);
-            xQueueSend(commandQueue, (void *) &mode, (TickType_t)0);
-        }
+        PushCommandToQueue(command);
 
         TerrestrialResponse_t response;
         if (xQueueReceive(responseQueue, &response, 0))
@@ -115,13 +122,10 @@ void consoleTask(void* params)
 
         currentTimeMs = now;
         auto usI2CStart = micros();
+
         _userConsole->Loop();
         command = _userConsole->GetCommand();
-        if (!command.empty())
-        {
-            auto mode = ParseCommand(command);
-            xQueueSend(commandQueue, (void *) &mode, (TickType_t)0);
-        }
+        PushCommandToQueue(command);
 
         auto usStop = micros();
         uint8_t i2c = (usStop - usI2CStart) / 10;

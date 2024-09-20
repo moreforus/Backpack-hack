@@ -1,8 +1,6 @@
 #pragma once
 #include "module_base.h"
 #include <Arduino.h>
-#include <channels.h>
-#include <string>
 #include <Terrestrial/scanner.h>
 #include <Terrestrial/antennaType.h>
 #include <Terrestrial/DataModel/terrestrialState.h>

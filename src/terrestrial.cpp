@@ -1,6 +1,7 @@
 #include "terrestrial.h"
 #include <SPI.h>
 #include "logging.h"
+#include <channels.h>
 #include <rtc6715.h>
 #include <lib_rtc6712.h>
 #include <common.h>
