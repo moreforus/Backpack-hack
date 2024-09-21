@@ -44,8 +44,12 @@ UserConsole::Init()
         _ui->enableAllIndicators();
         if (isSave)
         {
-            char tmp[64];
-            sprintf(tmp, "S%04d:%04d:%04d:%02d", _state->scanner.from, _state->scanner.to, _state->scanner.filter, _state->scanner.step);
+            std::string tmp("S");
+            tmp += std::to_string(_state->scanner.from);
+            tmp += ":" + std::to_string(_state->scanner.to);
+            tmp += ":" + std::to_string(_state->scanner.filter);
+            tmp += ":" + std::to_string(_state->scanner.step);
+            //sprintf(tmp, "S%04d:%04d:%04d:%02d", _state->scanner.from, _state->scanner.to, _state->scanner.filter, _state->scanner.step);
             std::lock_guard<std::mutex> lock(_commandMutex);
             _command = tmp;
         }

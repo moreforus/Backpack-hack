@@ -10,17 +10,17 @@ enum WORK_MODE_TYPE : uint8_t
 typedef struct 
 {
     WORK_MODE_TYPE work;
-    uint16_t freq;
-    uint16_t scannerFrom;
-    uint16_t scannerTo;
+    frequency_t freq;
+    frequency_t scannerFrom;
+    frequency_t scannerTo;
     uint16_t scannerFilter;
-    uint8_t scannerStep;
+    frequency_t scannerStep;
 } TerrestrialCommand_t;
 
 typedef struct 
 {
     WORK_MODE_TYPE work;
-    uint16_t freq;
+    frequency_t freq;
     uint16_t rssiA;
     uint16_t rssiB;
     uint8_t antenna;

@@ -19,40 +19,45 @@ ParseCommand(const std::string& command)
     {
         if (command[0] == 'R')
         {
-            if (command.size() >= 4)
-            {
-                terrCommand.work = WORK_MODE_TYPE::RECEIVER;
-                terrCommand.freq = atoi(command.c_str() + 1);
-            }
+            terrCommand.work = WORK_MODE_TYPE::RECEIVER;
+            terrCommand.freq = atof(command.c_str() + 1);
         }
         else if (command[0] == 'S')
         {
-            if (command.size() >= 17)
+            char tmp[25];
+            auto buffer = command.c_str();
+
+            // get xxxx:
+            auto separatorPos = command.find(':');
+            strncpy(tmp, buffer + 1, separatorPos - 1);
+            tmp[separatorPos - 1] = 0;
+            frequency_t minFreq = atof(tmp);
+
+            // get :yyyy:
+            auto separatorPos1 = command.find(':', separatorPos + 1);
+            strncpy(tmp, buffer + separatorPos + 1, separatorPos1 - separatorPos - 1);
+            tmp[separatorPos1 - separatorPos - 1] = 0;
+            frequency_t maxFreq = atof(tmp);
+            
+            // get :dddd:
+            separatorPos = command.find(':', separatorPos1 + 1);
+            strncpy(tmp, buffer + separatorPos + 1, separatorPos - separatorPos1 - 1);
+            tmp[separatorPos - separatorPos1 - 1] = 0;
+            terrCommand.scannerFilter = atoi(tmp);
+
+            // get :ii
+            strcpy(tmp, buffer + separatorPos + 1);
+            tmp[strlen(buffer) - separatorPos - 1] = 0;
+            terrCommand.scannerStep  = atof(tmp);
+
+            if (minFreq > maxFreq)
             {
-                char tmp[5];
-                auto buffer = command.c_str();
-                strncpy(tmp, buffer + 1, 4);
-                tmp[4] = 0;
-                uint16_t minFreq = atoi(tmp);
-                strncpy(tmp, buffer + 6, 4);
-                tmp[4] = 0;
-                uint16_t maxFreq = atoi(tmp);
-                strncpy(tmp, buffer + 11, 4);
-                tmp[4] = 0;
-                terrCommand.scannerFilter = atoi(tmp);
-                strncpy(tmp, buffer + 16, 2);
-                tmp[2] = 0;
-                terrCommand.scannerStep  = atoi(tmp);
-
-                if (minFreq > maxFreq)
-                {
-                    std::swap(minFreq, maxFreq);
-                }
-
-                terrCommand.work = WORK_MODE_TYPE::SCANNER;
-                terrCommand.scannerFrom = minFreq;
-                terrCommand.scannerTo = maxFreq;
+                std::swap(minFreq, maxFreq);
             }
+
+            terrCommand.work = WORK_MODE_TYPE::SCANNER;
+            terrCommand.scannerFrom = minFreq;
+            terrCommand.scannerTo = maxFreq;
         }
     }
     
@@ -63,9 +68,15 @@ static std::string
 MakeMessage(const TerrestrialResponse_t& response)
 {
     uint64_t us = micros();
-    char str[48];
-    sprintf(str, "%s:%d[%d:%d]%d>%llu\r\n", response.work == WORK_MODE_TYPE::RECEIVER ? "R" : "S"
-                                          , response.freq, response.rssiA, response.rssiB, response.antenna, us);
+    std::string str(response.work == WORK_MODE_TYPE::RECEIVER ? "R" : "S");
+    str += ":" + std::to_string(response.freq);
+    str += "[" + std::to_string(response.rssiA);
+    str += ":" + std::to_string(response.rssiB);
+    str += "]" + std::to_string(response.antenna);
+    str += ":" + std::to_string(us);
+    str += "\r\n";
+    //sprintf(str, "%s:%d[%d:%d]%d>%llu\r\n", response.work == WORK_MODE_TYPE::RECEIVER ? "R" : "S"
+      //                                    , response.freq, response.rssiA, response.rssiB, response.antenna, us);
     
     return str;
 }

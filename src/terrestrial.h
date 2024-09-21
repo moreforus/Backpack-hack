@@ -25,7 +25,7 @@ private:
     void SwitchVideo(ANTENNA_TYPE antenna);
     void SetWorkMode(WORK_MODE_TYPE mode);
     void Work();
-    void SetFreq(uint16_t freq);
+    void SetFreq(frequency_t freq);
     void SaveConfig();
     TerrestrialResponse_t Receive();
     TerrestrialResponse_t ScannerMeasure(Scanner* _scanner);
@@ -35,12 +35,12 @@ private:
     uint32_t _currentTimeMs = 0;
     WORK_MODE_TYPE _workMode = RECEIVER;
     SCANNER_AUTO_TYPE _scannerAuto = SCANNER_AUTO_TYPE::INIT;
-    uint16_t _minScanner5G8Freq;
-    uint16_t _maxScanner5G8Freq;
-    uint16_t _minScanner1G2Freq;
-    uint16_t _maxScanner1G2Freq;
+    frequency_t _minScanner5G8Freq;
+    frequency_t _maxScanner5G8Freq;
+    frequency_t _minScanner1G2Freq;
+    frequency_t _maxScanner1G2Freq;
     uint16_t _scannerFilter = 1;
-    uint8_t _scannerStep = 1;
+    frequency_t _scannerStep = 1;
     Scanner* _scanner1G2 = nullptr;
     Scanner* _scanner5G8 = nullptr;
     TERRESTRIAL_STATE _state;

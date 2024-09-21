@@ -1,6 +1,6 @@
 #include "channels.h"
 
-uint16_t GetFrequency(uint8_t index)
+frequency_t GetFrequency(uint8_t index)
 {
     if (index < MAX_CHANNELS)
         return frequencyTable[index];

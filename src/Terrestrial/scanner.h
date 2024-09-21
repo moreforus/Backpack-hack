@@ -1,5 +1,6 @@
 #pragma once
 #include <Terrestrial/antennaType.h>
+#include <common.h>
 
 enum SCANNER_AUTO_TYPE : uint8_t
 {
@@ -13,10 +14,10 @@ struct ScannerRssiState_t
 {
     uint16_t rssiMin;
     uint16_t rssiMax;
-    uint16_t freqForMaxValue;
+    frequency_t freqForMaxValue;
 };
 
-typedef void (*worker)(uint16_t);
+typedef void (*worker)(frequency_t);
 
 class Scanner {
 public:
@@ -28,7 +29,7 @@ public:
         _worker = function;
     }
 
-    void Init(uint16_t minFreq, uint16_t maxFreq)
+    void Init(frequency_t minFreq, frequency_t maxFreq)
     {
         _minFreq = minFreq;
         _maxFreq = maxFreq;
@@ -46,7 +47,7 @@ public:
         _filter = filterInitCounter;
     }
 
-    uint16_t inline GetFreq() const
+    frequency_t inline GetFreq() const
     {
         return _scannerFreq;
     }
@@ -122,7 +123,7 @@ public:
         return _rssiB;
     }
 
-    bool IncrementFreq(uint8_t step)
+    bool IncrementFreq(frequency_t step)
     {
         _scannerFreq += step;
         if (_scannerFreq > _maxFreq)
@@ -148,9 +149,9 @@ public:
 
 private:
     worker _worker;
-    uint16_t _scannerFreq;
-    uint16_t _minFreq;
-    uint16_t _maxFreq;
+    frequency_t _scannerFreq;
+    frequency_t _minFreq;
+    frequency_t _maxFreq;
     uint16_t _rssiA = 0;
     uint16_t _rssiB = 0;
     uint16_t _filter = 0;

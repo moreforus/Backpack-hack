@@ -63,7 +63,7 @@ Terrestrial::EnableSPIMode()
 }
 
 void
-Terrestrial::SetFreq(uint16_t freq)
+Terrestrial::SetFreq(frequency_t freq)
 {
     if (freq >= MIN_5G8_FREQ)
     {
@@ -127,6 +127,8 @@ Terrestrial::Receive()
 
         response.work = WORK_MODE_TYPE::RECEIVER;
         response.freq = _state.receiver.currentFreq;
+        response.rssiA = _state.receiverState.rssiA;
+        response.rssiB = _state.receiverState.rssiB;
         response.antenna = _currentAntenna;
     }
 
@@ -352,32 +354,32 @@ Terrestrial::Loop(uint32_t now)
             _minScanner5G8Freq = 0;
             _maxScanner5G8Freq = 0;
             if (minFreq <= MAX_1G2_FREQ)
-                {
-                    _minScanner1G2Freq = minFreq;
-                    _maxScanner1G2Freq = MAX_1G2_FREQ;
+            {
+                _minScanner1G2Freq = minFreq;
+                _maxScanner1G2Freq = MAX_1G2_FREQ;
 
-                    if (maxFreq > MIN_5G8_FREQ)
-                    {
-                        _minScanner5G8Freq = MIN_5G8_FREQ;
-                        _maxScanner5G8Freq = MAX_5G8_FREQ;
-                    }
-                }
-
-                if (maxFreq <= MAX_1G2_FREQ)
+                if (maxFreq > MIN_5G8_FREQ)
                 {
-                    _maxScanner1G2Freq = maxFreq;
-                }
-
-                if (minFreq >= MIN_5G8_FREQ && minFreq <= MAX_5G8_FREQ)
-                {
-                    _minScanner5G8Freq = minFreq;
+                    _minScanner5G8Freq = MIN_5G8_FREQ;
                     _maxScanner5G8Freq = MAX_5G8_FREQ;
                 }
+            }
 
-                if (maxFreq >= MIN_5G8_FREQ && maxFreq <= MAX_5G8_FREQ)
-                {
-                    _maxScanner5G8Freq = maxFreq;
-                }
+            if (maxFreq <= MAX_1G2_FREQ)
+            {
+                _maxScanner1G2Freq = maxFreq;
+            }
+
+            if (minFreq >= MIN_5G8_FREQ && minFreq <= MAX_5G8_FREQ)
+            {
+                _minScanner5G8Freq = minFreq;
+                _maxScanner5G8Freq = MAX_5G8_FREQ;
+            }
+
+            if (maxFreq >= MIN_5G8_FREQ && maxFreq <= MAX_5G8_FREQ)
+            {
+                _maxScanner5G8Freq = maxFreq;
+            }
 
             _state.scanner.from = minFreq;
             _state.scanner.to = maxFreq;
@@ -421,9 +423,7 @@ Terrestrial::CheckRSSI(ANTENNA_TYPE& antenna, uint16_t filterInitCounter)
     }
     else if (_state.receiver.currentFreq < MAX_1G2_FREQ)
     {
-        analogRead(RSSI_1G2_A);
         rssiASum += analogRead(RSSI_1G2_A);
-        analogRead(RSSI_1G2_B);
         rssiBSum += analogRead(RSSI_1G2_B);
     }
 

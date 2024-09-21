@@ -1,4 +1,5 @@
 #include <rtc6715.h>
+#include <Arduino.h>
 
 #define SYNTHESIZER_REG_A                           0x00
 #define SYNTHESIZER_REG_B                           0x01
@@ -107,9 +108,10 @@ static void rtc6715WriteRegister(uint32_t buf)
     delayMicroseconds(periodMicroSec);
 }
 
-void rtc6715SetFreq(uint16_t freq)
+void rtc6715SetFreq(frequency_t freq)
 {
-    uint32_t data = ((((freq - 479) / 2) / 32) << 7) | (((freq - 479) / 2) % 32);
+    uint16_t newFreq = (freq - 479) / 2;
+    uint32_t data = ((newFreq / 32) << 7) | (newFreq % 32);
     uint32_t newRegisterData = SYNTHESIZER_REG_B  | (RX5808_WRITE_CTRL_BIT << 4) | (data << 5);
     //uint32_t currentRegisterData = SYNTHESIZER_REG_B | (RX5808_WRITE_CTRL_BIT << 4) | rtc6715readRegister(SYNTHESIZER_REG_B);
     //if (newRegisterData != currentRegisterData)

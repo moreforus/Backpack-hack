@@ -1,4 +1,5 @@
 #include <lib_rtc6712.h>
+#include <Arduino.h>
 
 #define RTC6712_BIT_BANG_FREQ (10000)
 #define RTC6712_FREQ_REF_MHZ (8)
@@ -58,7 +59,7 @@ void rtc6712WriteRegisters(uint16_t r, uint8_t a, uint16_t n, uint32_t regC)
     rtc6712WriteRegister(RegAddrType::RegC, regC);
 }
 
-void rtc6712SetFreq(uint16_t inputFreq)
+void rtc6712SetFreq(frequency_t inputFreq)
 {
     uint16_t r = RTC6712_FREQ_REF_MHZ;
     uint8_t a;

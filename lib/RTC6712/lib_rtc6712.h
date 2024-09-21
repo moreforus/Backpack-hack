@@ -1,5 +1,5 @@
 #pragma once
 
-#include <Arduino.h>
+#include <common.h>
 
-void rtc6712SetFreq(uint16_t freq);
+void rtc6712SetFreq(frequency_t freq);

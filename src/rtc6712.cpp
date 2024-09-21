@@ -41,6 +41,6 @@ RTC6712::SendIndexCmd(uint8_t index)
     DBG("Setting index ");
     DBGLN("%x", index);
 
-    float inputFreq = frequencyTable[index];
+    auto inputFreq = frequencyTable[index];
     rtc6712SetFreq(inputFreq);
 }

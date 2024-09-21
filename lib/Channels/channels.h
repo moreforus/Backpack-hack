@@ -1,10 +1,11 @@
 #pragma once
 
 #include <Arduino.h>
+#include <common.h>
 
 #define MAX_CHANNELS (96)
 
-const uint16_t frequencyTable[MAX_CHANNELS] = {
+const frequency_t frequencyTable[MAX_CHANNELS] = {
     5865, 5845, 5825, 5805, 5785, 5765, 5745, 5725, // A
     5733, 5752, 5771, 5790, 5809, 5828, 5847, 5866, // B
     5705, 5685, 5665, 5645, 5885, 5905, 5925, 5945, // E
@@ -19,6 +20,6 @@ const uint16_t frequencyTable[MAX_CHANNELS] = {
     4990, 5020, 5050, 5080, 5110, 5140, 5170, 5200, // X
 };
 
-uint16_t GetFrequency(uint8_t index);
+frequency_t GetFrequency(uint8_t index);
 uint8_t GetBand(uint8_t index);
 uint8_t GetChannel(uint8_t index);
