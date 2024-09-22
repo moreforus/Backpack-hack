@@ -8,6 +8,7 @@
 #include "config.h"
 #include <Terrestrial/consoleTask.h>
 #include <Terrestrial/receiversParam.h>
+#include <Terrestrial/receiver.h>
 
 #define RSSI_DIFF_BORDER (16)
 
@@ -29,14 +30,15 @@ Terrestrial::Init()
     pinMode(PIN_1G2_CS, INPUT);
     pinMode(VIDEO_CTRL, OUTPUT);
 
-    DBGLN("Terrestrial init complete");
-
     xTaskCreatePinnedToCore(consoleTask, "consoleTask", 5000, (void*)&_state, 1, NULL, 0);
 
     _scanner1G2 = new Scanner(rtc6712SetFreq, RSSI_1G2_A, RSSI_1G2_B, RSSI_DIFF_BORDER);
     _scanner5G8 = new Scanner(rtc6715SetFreq, RSSI_5G8_A, RSSI_5G8_B, RSSI_DIFF_BORDER);
+    _receiver = new Receiver(RSSI_1G2_A, RSSI_1G2_B, RSSI_5G8_A, RSSI_5G8_B, RSSI_DIFF_BORDER);
+    _receiver->SetFreq(_state.receiver.currentFreq);
     
     EnableSPIMode();
+    DBGLN("Terrestrial init complete");
 }
 
 void
@@ -58,16 +60,8 @@ Terrestrial::EnableSPIMode()
 void
 Terrestrial::SetFreq(frequency_t freq)
 {
-    if (freq >= MIN_5G8_FREQ)
-    {
-        rtc6715SetFreq(freq);
-        _state.receiver.currentFreq = freq;
-    }
-    else if (freq < MAX_1G2_FREQ)
-    {
-        rtc6712SetFreq(freq);
-        _state.receiver.currentFreq = freq;
-    }
+    _receiver->SetFreq(freq);
+    _state.receiver.currentFreq = freq;
 }
 
 void
@@ -110,8 +104,10 @@ Terrestrial::Receive()
     TerrestrialResponse_t response;
     response.work = WORK_MODE_TYPE::NONE;
     ANTENNA_TYPE antenna = ANT_A;
-    if (CheckRSSI(antenna, DEFAULT_RECEIVER_FILTER))
+    if (_receiver->MeasureRSSI(antenna, DEFAULT_RECEIVER_FILTER))
     {
+        _state.receiverState.rssiA = _receiver->GetRssiA();
+        _state.receiverState.rssiB = _receiver->GetRssiB();
         if (antenna != _currentAntenna)
         {
             _currentAntenna = antenna;
@@ -323,49 +319,6 @@ Terrestrial::Loop(uint32_t now)
     uint8_t cpu = (micros() - usStart) / 10;
     _state.device.cpu1 = cpu > 100 ? 100 : cpu;
     _state.device.connectionState = connectionState;
-}
-
-bool 
-Terrestrial::CheckRSSI(ANTENNA_TYPE& antenna, uint16_t filterInitCounter)
-{
-    static uint16_t filter = 0;
-    static uint32_t rssiASum = 0;
-    static uint32_t rssiBSum = 0;
-
-    if (filter == 0) filter = filterInitCounter;
-
-    if (_state.receiver.currentFreq >= MIN_5G8_FREQ)
-    {
-        rssiASum += analogRead(RSSI_5G8_A);
-        rssiBSum += analogRead(RSSI_5G8_B);
-    }
-    else if (_state.receiver.currentFreq < MAX_1G2_FREQ)
-    {
-        rssiASum += analogRead(RSSI_1G2_A);
-        rssiBSum += analogRead(RSSI_1G2_B);
-    }
-
-    if (--filter == 0)
-    {
-        _state.receiverState.rssiA = rssiASum / filterInitCounter;
-        _state.receiverState.rssiB = rssiBSum / filterInitCounter;
-
-        if (_state.receiverState.rssiA - _state.receiverState.rssiB > RSSI_DIFF_BORDER)
-        {
-            antenna = ANT_A;
-        }
-        else if (_state.receiverState.rssiB - _state.receiverState.rssiA > RSSI_DIFF_BORDER)
-        {
-            antenna = ANT_B;
-        }
-
-        rssiASum = 0;
-        rssiBSum = 0;
-
-        return true;
-    }
- 
-    return false;
 }
 
 void

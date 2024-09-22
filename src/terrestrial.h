@@ -8,6 +8,7 @@
 
 class IConsole;
 class VrxBackpackConfig;
+class Receiver;
 class Terrestrial : public ModuleBase
 {
 public:
@@ -21,7 +22,6 @@ public:
 
 private:
     void EnableSPIMode();
-    bool CheckRSSI(ANTENNA_TYPE& antenna, uint16_t filterInitCounter);
     void SwitchVideo(ANTENNA_TYPE antenna);
     void SetWorkMode(WORK_MODE_TYPE mode);
     void Work();
@@ -42,6 +42,7 @@ private:
     frequency_t _scannerStep = 1;
     Scanner* _scanner1G2 = nullptr;
     Scanner* _scanner5G8 = nullptr;
+    Receiver* _receiver;
     TERRESTRIAL_STATE _state;
     VrxBackpackConfig* _config;
     TerrestrialCommand_t _currentCommand;
