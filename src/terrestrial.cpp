@@ -181,14 +181,11 @@ Terrestrial::Work()
                 auto response = ScannerMeasure(_scanner1G2);
                 if (response.work == WORK_MODE_TYPE::SCANNER)
                 {
-                    response.command = _currentCommand;
-                    xQueueSend(responseQueue, (void*)&response, 0);
-
                     if (_scanner1G2->IncrementFreq(_scannerStep))
                     {
-                        /*auto state1g2 = _scanner1G2->GetRssiState();
+                        auto state1g2 = _scanner1G2->GetRssiState();
                         _state.scannerState.SetMaxFreq1G2(state1g2.freqForMaxValue);
-                        if (!_isScalingCompleted)
+                        /*if (!_isScalingCompleted)
                         {
                             _isScalingCompleted = true;
 
@@ -209,22 +206,25 @@ Terrestrial::Work()
 
                         _scanner1G2->ResetScannerRssiState();
                     }
+
+                    response.command = _currentCommand;
+                    response.scannerState = _state.scannerState;
+                    xQueueSend(responseQueue, (void*)&response, 0);
                 }
 
                 response = ScannerMeasure(_scanner5G8);
                 if (response.work == WORK_MODE_TYPE::SCANNER)
                 {
-                    response.command = _currentCommand;
-                    xQueueSend(responseQueue, (void*)&response, 0);
-
                     if (_scanner5G8->IncrementFreq(_scannerStep))
                     {
-                        /*auto state5g8 = _scanner5G8->GetRssiState();
+                        auto state5g8 = _scanner5G8->GetRssiState();
                         _state.scannerState.SetMaxFreq5G8(state5g8.freqForMaxValue);
                         _scanner5G8->ResetScannerRssiState();
-                        */
                     }
 
+                    response.command = _currentCommand;
+                    response.scannerState = _state.scannerState; 
+                    xQueueSend(responseQueue, (void*)&response, 0);
                     _scannerAuto = SET_FREQ_1G2;
                 }
             break;

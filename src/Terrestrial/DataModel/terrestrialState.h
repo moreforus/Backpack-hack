@@ -1,6 +1,5 @@
 #pragma once
 #include <common.h>
-#include <mutex>
 
 struct RECEIVER_SETTINGS
 {
@@ -34,31 +33,25 @@ struct SCANNER_STATE
 {
     frequency_t GetMaxFreq1G2()
     {
-        std::lock_guard<std::mutex> lock(_maxFreq1g2Mutex);
         return _maxFreq1g2;
     }
 
     frequency_t GetMaxFreq5G8()
     {
-        std::lock_guard<std::mutex> lock(_maxFreq5g8Mutex);
         return _maxFreq5g8;
     }
 
     void SetMaxFreq1G2(frequency_t freq)
     {
-        std::lock_guard<std::mutex> lock(_maxFreq1g2Mutex);
         _maxFreq1g2 = freq;
     }
 
     void SetMaxFreq5G8(frequency_t freq)
     {
-        std::lock_guard<std::mutex> lock(_maxFreq5g8Mutex);
         _maxFreq5g8 = freq;
     }
 
 private:
-    std::mutex _maxFreq1g2Mutex;
-    std::mutex _maxFreq5g8Mutex;
     frequency_t _maxFreq1g2;
     frequency_t _maxFreq5g8;
 };

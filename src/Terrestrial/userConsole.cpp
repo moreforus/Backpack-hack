@@ -153,7 +153,7 @@ UserConsole::Loop()
             PrepareBufferForDraw1G2(response);
         }
 
-        _scannerFrame->UpdateRSSI(_rssi);
+        _scannerFrame->UpdateRSSI(_rssi, response.scannerState);
         _response = response;
     }
 

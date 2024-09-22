@@ -132,8 +132,8 @@ void ScannerFrame::Preview(OLEDDisplay* display,  OLEDDisplayUiState* state, int
     if (_rssi != nullptr)
     {
         display->setFont(ArialMT_Plain_10);
-        //display->drawString(10 + x, 18 + y, std::to_string(_scannerState->GetMaxFreq1G2()).c_str());
-        //display->drawString(74 + x, 18 + y, std::to_string(_scannerState->GetMaxFreq5G8()).c_str());
+        display->drawString(10 + x, 18 + y, std::to_string(_scannerState.GetMaxFreq1G2()).c_str());
+        display->drawString(74 + x, 18 + y, std::to_string(_scannerState.GetMaxFreq5G8()).c_str());
         for(int i = 0; i < display->width(); ++i)
         {
             uint8_t height = (64.0 / 2048) * _rssi[i];

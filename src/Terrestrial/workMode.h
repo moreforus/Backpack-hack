@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdlib>
 #include <common.h>
+#include <Terrestrial/DataModel/terrestrialState.h>
 
 enum WORK_MODE_TYPE : uint8_t
 {
@@ -27,6 +28,7 @@ typedef struct
     uint16_t rssiB;
     uint8_t antenna;
     TerrestrialCommand_t command;
+    SCANNER_STATE scannerState;
     
     uint16_t inline GetMaxRssi() const
     {
