@@ -163,7 +163,6 @@ UserConsole::Loop()
 void
 UserConsole::ScannerStart()
 {
-    _isScalingCompleted = false;
     _preX1g2 = 0;
     _preX5g8 = _displayWidth / 2;
     _rssi[_preX1g2] = 0;
@@ -200,7 +199,7 @@ UserConsole::PrepareBufferForDraw1G2(const TerrestrialResponse_t& response)
             }
         }
 
-        uint16_t rssi = response.GetMaxRssi() * _scale1G2;
+        uint16_t rssi = response.GetMaxRssi() * response.scannerState.scale1G2;
         if (rssi > _rssi[x])
         {
             _rssi[x] = rssi;
@@ -238,7 +237,7 @@ UserConsole::PrepareBufferForDraw5G8(const TerrestrialResponse_t& response)
             }
         }
 
-        uint16_t rssi = response.GetMaxRssi() * _scale5G8;
+        uint16_t rssi = response.GetMaxRssi() * response.scannerState.scale5G8;
         if (rssi > _rssi[x])
         {
             _rssi[x] = rssi;

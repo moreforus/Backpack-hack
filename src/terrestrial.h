@@ -45,4 +45,5 @@ private:
     TERRESTRIAL_STATE _state;
     VrxBackpackConfig* _config;
     TerrestrialCommand_t _currentCommand;
+    bool _isScalingCompleted = false;
 };

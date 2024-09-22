@@ -164,6 +164,7 @@ Terrestrial::Work()
             case INIT:
                 _scanner1G2->Init(_minScanner1G2Freq, _maxScanner1G2Freq);
                 _scanner5G8->Init(_minScanner5G8Freq, _maxScanner5G8Freq);
+                _isScalingCompleted = false;
                 _scannerAuto = SET_FREQ_1G2;
             break;
 
@@ -185,24 +186,27 @@ Terrestrial::Work()
                     {
                         auto state1g2 = _scanner1G2->GetRssiState();
                         _state.scannerState.SetMaxFreq1G2(state1g2.freqForMaxValue);
-                        /*if (!_isScalingCompleted)
+                        if (!_isScalingCompleted)
                         {
                             _isScalingCompleted = true;
 
                             auto state5g8 = _scanner5G8->GetRssiState();
-                            _scale1G2 = 1.0;
-                            _scale5G8 = 1.0;
+                            auto scale1G2 = 1.0;
+                            auto scale5G8 = 1.0;
                             if (state1g2.rssiMin > state5g8.rssiMin)
                             {
-                                _scale1G2 = (double)state5g8.rssiMin / state1g2.rssiMin;
-                                _scale5G8 = 1.0;
+                                scale1G2 = (double)state5g8.rssiMin / state1g2.rssiMin;
+                                scale5G8 = 1.0;
                             }
                             else if (state1g2.rssiMin < state5g8.rssiMin)
                             {
-                                _scale5G8 = (double)state1g2.rssiMin / state5g8.rssiMin;
-                                _scale1G2 = 1.0;
+                                scale5G8 = (double)state1g2.rssiMin / state5g8.rssiMin;
+                                scale1G2 = 1.0;
                             }
-                        } */
+
+                            _state.scannerState.scale1G2 = scale1G2;
+                            _state.scannerState.scale5G8 = scale5G8;
+                        }
 
                         _scanner1G2->ResetScannerRssiState();
                     }

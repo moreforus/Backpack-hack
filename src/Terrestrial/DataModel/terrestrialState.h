@@ -51,6 +51,9 @@ struct SCANNER_STATE
         _maxFreq5g8 = freq;
     }
 
+    double scale1G2 = 1.0;
+    double scale5G8 = 1.0;
+
 private:
     frequency_t _maxFreq1g2;
     frequency_t _maxFreq5g8;
