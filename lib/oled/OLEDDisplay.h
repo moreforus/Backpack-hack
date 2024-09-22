@@ -164,8 +164,8 @@ class OLEDDisplay : public Stream {
 	  OLEDDisplay();
     virtual ~OLEDDisplay();
 
-	  uint16_t width(void) const { return displayWidth; };
-	  uint16_t height(void) const { return displayHeight; };
+	  uint16_t inline width(void) const { return displayWidth; };
+	  uint16_t inline height(void) const { return displayHeight; };
 
     // Use this to resume after a deep sleep without resetting the display (what init() would do).
     // Returns true if connection to the display was established and the buffer allocated, false otherwise.

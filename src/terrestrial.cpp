@@ -7,14 +7,9 @@
 #include <common.h>
 #include "config.h"
 #include <Terrestrial/consoleTask.h>
+#include <Terrestrial/receiversParam.h>
 
 #define RSSI_DIFF_BORDER (16)
-
-#define MIN_1G2_FREQ (500)
-#define MAX_1G2_FREQ (2500)
-
-#define MIN_5G8_FREQ (4900)
-#define MAX_5G8_FREQ (6000)
 
 void
 Terrestrial::Init()
@@ -33,8 +28,6 @@ Terrestrial::Init()
     pinMode(PIN_5G8_CS, INPUT);
     pinMode(PIN_1G2_CS, INPUT);
     pinMode(VIDEO_CTRL, OUTPUT);
-
-    memset(_state.scannerState.rssi, 0, sizeof(_state.scannerState.rssi));
 
     DBGLN("Terrestrial init complete");
 
@@ -153,82 +146,6 @@ Terrestrial::ScannerMeasure(Scanner* scanner)
 }
 
 void
-Terrestrial::PrepareBufferForDraw1G2()
-{
-    uint16_t from = MIN_1G2_FREQ;
-    uint16_t to = MAX_1G2_FREQ;
-    if (_state.scanner.from < MAX_1G2_FREQ)
-    {
-        from = _state.scanner.from;
-    }
-    
-    if (_state.scanner.to < MAX_1G2_FREQ)
-    {
-        to = _state.scanner.to;
-    }
-
-    auto count = (to - from) / _scannerStep;
-    double rt = ((double)(RSSI_BUFFER_SIZE - 1) / 2) / count;
-    uint8_t x = (_scanner1G2->GetFreq() - from) * rt / _scannerStep;
-    if (x < RSSI_BUFFER_SIZE)
-    {
-        if (x != _preX1g2)
-        {
-            _preX1g2 = x;
-            _state.scannerState.rssi[_preX1g2] = 0;
-            if (x < RSSI_BUFFER_SIZE / 2 - 1)
-            {
-                _state.scannerState.rssi[_preX1g2 + 1] = 0;
-            }
-        }
-
-        uint16_t rssi = _scanner1G2->GetMaxRssi() * _scale1G2;
-        if (rssi > _state.scannerState.rssi[x])
-        {
-            _state.scannerState.rssi[x] = rssi;
-        }
-    }
-}
-
-void
-Terrestrial::PrepareBufferForDraw5G8()
-{
-    uint16_t from = MIN_5G8_FREQ;
-    uint16_t to = MAX_5G8_FREQ;
-    if (_state.scanner.from >= MIN_5G8_FREQ)
-    {
-        from = _state.scanner.from;
-    }
-    
-    if (_state.scanner.to < MAX_5G8_FREQ)
-    {
-        to = _state.scanner.to;
-    }
-
-    auto count = (to - from) / _scannerStep;
-    double rt = ((double)(RSSI_BUFFER_SIZE - 1) / 2) / count;
-    uint8_t x = RSSI_BUFFER_SIZE / 2 + ((_scanner5G8->GetFreq() - from) * rt / _scannerStep);
-    if (x < RSSI_BUFFER_SIZE)
-    {
-        if (x != _preX5g8)
-        {
-            _preX5g8 = x;
-            _state.scannerState.rssi[_preX5g8] = 0;
-            if (x < RSSI_BUFFER_SIZE - 1)
-            {
-                _state.scannerState.rssi[_preX5g8 + 1] = 0;
-            }
-        }
-
-        uint16_t rssi = _scanner5G8->GetMaxRssi() * _scale5G8;
-        if (rssi > _state.scannerState.rssi[x])
-        {
-            _state.scannerState.rssi[x] = rssi;
-        }
-    }
-}
-
-void
 Terrestrial::Work()
 {
     if (_workMode == RECEIVER)
@@ -236,6 +153,7 @@ Terrestrial::Work()
         auto response = Receive();
         if (response.work == WORK_MODE_TYPE::RECEIVER)
         {
+            response.command = _currentCommand;
             xQueueSend(responseQueue, (void*)&response, 0);
         }
     }
@@ -247,12 +165,8 @@ Terrestrial::Work()
                 _scanner1G2->Init(_minScanner1G2Freq, _maxScanner1G2Freq);
                 _scanner5G8->Init(_minScanner5G8Freq, _maxScanner5G8Freq);
                 _scannerAuto = SET_FREQ_1G2;
-                _isScalingCompleted = false;
-                _preX1g2 = 0;
-                _preX5g8 = RSSI_BUFFER_SIZE / 2;
-                _state.scannerState.rssi[_preX1g2] = 0;
-                _state.scannerState.rssi[_preX5g8] = 0;
             break;
+
             case SET_FREQ_1G2:
                 _scanner1G2->SetFreq(_scannerFilter);
                 _scannerAuto = SET_FREQ_5G8;
@@ -267,13 +181,12 @@ Terrestrial::Work()
                 auto response = ScannerMeasure(_scanner1G2);
                 if (response.work == WORK_MODE_TYPE::SCANNER)
                 {
+                    response.command = _currentCommand;
                     xQueueSend(responseQueue, (void*)&response, 0);
-
-                    PrepareBufferForDraw1G2();
 
                     if (_scanner1G2->IncrementFreq(_scannerStep))
                     {
-                        auto state1g2 = _scanner1G2->GetRssiState();
+                        /*auto state1g2 = _scanner1G2->GetRssiState();
                         _state.scannerState.SetMaxFreq1G2(state1g2.freqForMaxValue);
                         if (!_isScalingCompleted)
                         {
@@ -292,7 +205,7 @@ Terrestrial::Work()
                                 _scale5G8 = (double)state1g2.rssiMin / state5g8.rssiMin;
                                 _scale1G2 = 1.0;
                             }
-                        }
+                        } */
 
                         _scanner1G2->ResetScannerRssiState();
                     }
@@ -301,19 +214,19 @@ Terrestrial::Work()
                 response = ScannerMeasure(_scanner5G8);
                 if (response.work == WORK_MODE_TYPE::SCANNER)
                 {
+                    response.command = _currentCommand;
                     xQueueSend(responseQueue, (void*)&response, 0);
-                    PrepareBufferForDraw5G8();
 
                     if (_scanner5G8->IncrementFreq(_scannerStep))
                     {
-                        auto state5g8 = _scanner5G8->GetRssiState();
+                        /*auto state5g8 = _scanner5G8->GetRssiState();
                         _state.scannerState.SetMaxFreq5G8(state5g8.freqForMaxValue);
                         _scanner5G8->ResetScannerRssiState();
+                        */
                     }
 
                     _scannerAuto = SET_FREQ_1G2;
                 }
-                
             break;
         }
     }
@@ -341,12 +254,14 @@ Terrestrial::Loop(uint32_t now)
     {
         if (cmd.work == WORK_MODE_TYPE::RECEIVER)
         {
+            _currentCommand = cmd;
             _state.receiver.currentFreq = cmd.freq;
             SetWorkMode(cmd.work);
             SaveConfig();
         }
         else if (cmd.work == WORK_MODE_TYPE::SCANNER)
         {
+            _currentCommand = cmd;
             uint16_t minFreq = cmd.scannerFrom;
             uint16_t maxFreq = cmd.scannerTo;
             _minScanner1G2Freq = 0;
@@ -398,11 +313,10 @@ Terrestrial::Loop(uint32_t now)
     }
 
     _currentTimeMs = now;
-    auto usStop = micros();
+
     Work();
 
-    usStop = micros();
-    uint8_t cpu = (usStop - usStart) / 10;
+    uint8_t cpu = (micros() - usStart) / 10;
     _state.device.cpu1 = cpu > 100 ? 100 : cpu;
     _state.device.connectionState = connectionState;
 }

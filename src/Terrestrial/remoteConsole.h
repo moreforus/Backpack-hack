@@ -1,22 +1,17 @@
 #pragma once
 #include <Terrestrial/IConsole.h>
-#include <mutex>
-#include <string>
-#include <vector>
 
-class RemoteConsole : public IConsole
+class RemoteConsole : public BaseConsole
 {
 public:
     RemoteConsole(unsigned long baud);
     virtual void Init() override;
     virtual void Loop() override;
-    virtual std::string GetCommand() override;
-    virtual void SendMessage(const std::string& message) override;
 
 private:
+    std::string MakeMessage(const TerrestrialResponse_t& response);
+    TerrestrialCommand_t ParseCommand(const std::string& command);
+
     char _buffer[20] = { 0, 0, };
     uint8_t _pointer = 0;
-    std::string _command;
-    std::mutex _messageQueueMutex;
-    std::vector<std::string> _messageQueue;
 };

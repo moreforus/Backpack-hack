@@ -5,6 +5,7 @@
 #include <Terrestrial/Views/receiverFrame.h>
 #include <Terrestrial/Views/scannerFrame.h>
 #include <Terrestrial/Views/deviceFrame.h>
+#include <Terrestrial/receiversParam.h>
 
 UserConsole::UserConsole(TERRESTRIAL_STATE* state)
     : _state(state)
@@ -12,6 +13,9 @@ UserConsole::UserConsole(TERRESTRIAL_STATE* state)
     _display = new SSD1306Wire(0x3c, SDA, SCL);
     _ui = new OLEDDisplayUi(_display);
     _iEnc = new IncrementalEncoder();
+    _displayWidth = _display->width();
+    _rssi = new uint16_t[_displayWidth];
+    memset(_rssi, 0, _displayWidth * sizeof(uint16_t));
 }
 
 void
@@ -32,7 +36,8 @@ UserConsole::Init()
         if (isSave)
         {
             std::lock_guard<std::mutex> lock(_commandMutex);
-            _command = "R" + std::to_string(_state->receiver.currentFreq);
+            _command.work = WORK_MODE_TYPE::RECEIVER;
+            _command.freq = _state->receiver.currentFreq;
         }
     });
     _frames.push_back((BaseFrame*)_receiverFrame);
@@ -44,14 +49,12 @@ UserConsole::Init()
         _ui->enableAllIndicators();
         if (isSave)
         {
-            std::string tmp("S");
-            tmp += std::to_string(_state->scanner.from);
-            tmp += ":" + std::to_string(_state->scanner.to);
-            tmp += ":" + std::to_string(_state->scanner.filter);
-            tmp += ":" + std::to_string(_state->scanner.step);
-            //sprintf(tmp, "S%04d:%04d:%04d:%02d", _state->scanner.from, _state->scanner.to, _state->scanner.filter, _state->scanner.step);
             std::lock_guard<std::mutex> lock(_commandMutex);
-            _command = tmp;
+            _command.work = WORK_MODE_TYPE::SCANNER;
+            _command.scannerFrom = _state->scanner.from;
+            _command.scannerTo = _state->scanner.to;
+            _command.scannerFilter = _state->scanner.filter;
+            _command.scannerStep = _state->scanner.step;
         }
     });
     _frames.push_back(_scannerFrame);
@@ -128,27 +131,117 @@ UserConsole::Loop()
         }
     }
 
+    auto response = GetMessage();
+    if (response.work == WORK_MODE_TYPE::RECEIVER)
+    {
+        _receiverFrame->UpdateRSSI(_state->receiverState);
+        _response = response;
+    }
+    else if (response.work == WORK_MODE_TYPE::SCANNER)
+    {
+        if (_response.work != WORK_MODE_TYPE::SCANNER)
+        {
+            ScannerStart();
+        }
+
+        if (response.freq > MIN_5G8_FREQ)
+        {
+            PrepareBufferForDraw5G8(response);
+        }
+        else if (response.freq < MAX_1G2_FREQ)
+        {
+            PrepareBufferForDraw1G2(response);
+        }
+
+        _scannerFrame->UpdateRSSI(_rssi);
+        _response = response;
+    }
+
     _ui->update();
 }
 
-std::string
-UserConsole::GetCommand()
+void
+UserConsole::ScannerStart()
 {
-    std::lock_guard<std::mutex> lock(_commandMutex);
-    auto tmp = _command;
-    _command = "";
-    return tmp;
+    _isScalingCompleted = false;
+    _preX1g2 = 0;
+    _preX5g8 = _displayWidth / 2;
+    _rssi[_preX1g2] = 0;
+    _rssi[_preX5g8] = 0;    
 }
 
 void
-UserConsole::SendMessage(const std::string& message)
+UserConsole::PrepareBufferForDraw1G2(const TerrestrialResponse_t& response)
 {
-    if (message[0] == 'R')
+    uint16_t from = MIN_1G2_FREQ;
+    uint16_t to = MAX_1G2_FREQ;
+    if (response.command.scannerFrom < MAX_1G2_FREQ)
     {
-        _receiverFrame->UpdateRSSI(_state->receiverState);
+        from = response.command.scannerFrom;
     }
-    else if (message[0] == 'S')
+    
+    if (response.command.scannerTo < MAX_1G2_FREQ)
     {
-        _scannerFrame->UpdateRSSI(&_state->scannerState);
+        to = response.command.scannerTo;
+    }
+
+    auto count = (to - from) / response.command.scannerStep;
+    double rt = ((double)(_displayWidth - 1) / 2) / count;
+    uint8_t x = (response.freq - from) * rt / response.command.scannerStep;
+    if (x < _displayWidth)
+    {
+        if (x != _preX1g2)
+        {
+            _preX1g2 = x;
+            _rssi[_preX1g2] = 0;
+            if (x < _displayWidth / 2 - 1)
+            {
+                _rssi[_preX1g2 + 1] = 0;
+            }
+        }
+
+        uint16_t rssi = response.GetMaxRssi() * _scale1G2;
+        if (rssi > _rssi[x])
+        {
+            _rssi[x] = rssi;
+        }
+    }
+}
+
+void
+UserConsole::PrepareBufferForDraw5G8(const TerrestrialResponse_t& response)
+{
+    uint16_t from = MIN_5G8_FREQ;
+    uint16_t to = MAX_5G8_FREQ;
+    if (response.command.scannerFrom >= MIN_5G8_FREQ)
+    {
+        from = response.command.scannerFrom;
+    }
+    
+    if (response.command.scannerTo < MAX_5G8_FREQ)
+    {
+        to = response.command.scannerTo;
+    }
+
+    auto count = (to - from) / response.command.scannerStep;
+    double rt = ((double)(_displayWidth - 1) / 2) / count;
+    uint8_t x = _displayWidth / 2 + ((response.freq - from) * rt / response.command.scannerStep);
+    if (x < _displayWidth)
+    {
+        if (x != _preX5g8)
+        {
+            _preX5g8 = x;
+            _rssi[_preX5g8] = 0;
+            if (x < _displayWidth - 1)
+            {
+                _rssi[_preX5g8 + 1] = 0;
+            }
+        }
+
+        uint16_t rssi = response.GetMaxRssi() * _scale5G8;
+        if (rssi > _rssi[x])
+        {
+            _rssi[x] = rssi;
+        }
     }
 }

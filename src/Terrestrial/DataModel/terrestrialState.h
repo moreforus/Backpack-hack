@@ -30,12 +30,8 @@ struct RECEIVER_STATE
     uint16_t rssiB;
 };
 
-#define RSSI_BUFFER_SIZE (128)
-
 struct SCANNER_STATE
 {
-    uint16_t rssi[RSSI_BUFFER_SIZE];
-
     frequency_t GetMaxFreq1G2()
     {
         std::lock_guard<std::mutex> lock(_maxFreq1g2Mutex);

@@ -1,4 +1,6 @@
 #pragma once
+#include <cstdlib>
+#include <common.h>
 
 enum WORK_MODE_TYPE : uint8_t
 {
@@ -24,4 +26,10 @@ typedef struct
     uint16_t rssiA;
     uint16_t rssiB;
     uint8_t antenna;
+    TerrestrialCommand_t command;
+    
+    uint16_t inline GetMaxRssi() const
+    {
+        return rssiA > rssiB ? rssiA : rssiB;
+    }
 } TerrestrialResponse_t;

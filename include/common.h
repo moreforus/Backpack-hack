@@ -2,7 +2,7 @@
 #include <cstdlib>
 
 typedef uint16_t frequency_t;
-//#define frequency_t uint16_t
+
 typedef enum
 {
     starting,

@@ -7,87 +7,12 @@
 QueueHandle_t commandQueue = nullptr;
 QueueHandle_t responseQueue = nullptr;
 
-static TerrestrialCommand_t
-ParseCommand(const std::string& command)
-{
-    TerrestrialCommand_t terrCommand;
-    terrCommand.work = WORK_MODE_TYPE::NONE;
-
-    // Rxxxx\n -- set receiving on xxxx freq
-    // Sxxxx:yyyy:dddd:ii\n -- set scanner mode from [xxxx] to [yyyy] with step [ii] MHz freq with delay [dddd] ms on each freq
-    if (!command.empty())
-    {
-        if (command[0] == 'R')
-        {
-            terrCommand.work = WORK_MODE_TYPE::RECEIVER;
-            terrCommand.freq = atof(command.c_str() + 1);
-        }
-        else if (command[0] == 'S')
-        {
-            char tmp[25];
-            auto buffer = command.c_str();
-
-            // get xxxx:
-            auto separatorPos = command.find(':');
-            strncpy(tmp, buffer + 1, separatorPos - 1);
-            tmp[separatorPos - 1] = 0;
-            frequency_t minFreq = atof(tmp);
-
-            // get :yyyy:
-            auto separatorPos1 = command.find(':', separatorPos + 1);
-            strncpy(tmp, buffer + separatorPos + 1, separatorPos1 - separatorPos - 1);
-            tmp[separatorPos1 - separatorPos - 1] = 0;
-            frequency_t maxFreq = atof(tmp);
-            
-            // get :dddd:
-            separatorPos = command.find(':', separatorPos1 + 1);
-            strncpy(tmp, buffer + separatorPos + 1, separatorPos - separatorPos1 - 1);
-            tmp[separatorPos - separatorPos1 - 1] = 0;
-            terrCommand.scannerFilter = atoi(tmp);
-
-            // get :ii
-            strcpy(tmp, buffer + separatorPos + 1);
-            tmp[strlen(buffer) - separatorPos - 1] = 0;
-            terrCommand.scannerStep  = atof(tmp);
-
-            if (minFreq > maxFreq)
-            {
-                std::swap(minFreq, maxFreq);
-            }
-
-            terrCommand.work = WORK_MODE_TYPE::SCANNER;
-            terrCommand.scannerFrom = minFreq;
-            terrCommand.scannerTo = maxFreq;
-        }
-    }
-    
-    return terrCommand;
-}
-
-static std::string
-MakeMessage(const TerrestrialResponse_t& response)
-{
-    uint64_t us = micros();
-    std::string str(response.work == WORK_MODE_TYPE::RECEIVER ? "R" : "S");
-    str += ":" + std::to_string(response.freq);
-    str += "[" + std::to_string(response.rssiA);
-    str += ":" + std::to_string(response.rssiB);
-    str += "]" + std::to_string(response.antenna);
-    str += ":" + std::to_string(us);
-    str += "\r\n";
-    //sprintf(str, "%s:%d[%d:%d]%d>%llu\r\n", response.work == WORK_MODE_TYPE::RECEIVER ? "R" : "S"
-      //                                    , response.freq, response.rssiA, response.rssiB, response.antenna, us);
-    
-    return str;
-}
-
 static void
-PushCommandToQueue(const std::string& command)
+PushCommandToQueue(const TerrestrialCommand_t& command)
 {
-    if (!command.empty())
+    if (command.work != WORK_MODE_TYPE::NONE)
     {
-        auto mode = ParseCommand(command);
-        xQueueSend(commandQueue, (void *) &mode, (TickType_t)0);
+        xQueueSend(commandQueue, (void *) &command, (TickType_t)0);
     }
 }
 
@@ -122,9 +47,8 @@ void consoleTask(void* params)
         TerrestrialResponse_t response;
         if (xQueueReceive(responseQueue, &response, 0))
         {
-            auto message = MakeMessage(response);
-            _remoteConsole->SendMessage(message);
-            _userConsole->SendMessage(message);
+            _remoteConsole->SendMessage(response);
+            _userConsole->SendMessage(response);
         }
     
         if (currentTimeMs == now)

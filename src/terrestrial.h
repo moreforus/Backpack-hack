@@ -27,10 +27,9 @@ private:
     void Work();
     void SetFreq(frequency_t freq);
     void SaveConfig();
+
     TerrestrialResponse_t Receive();
     TerrestrialResponse_t ScannerMeasure(Scanner* _scanner);
-    void PrepareBufferForDraw1G2();
-    void PrepareBufferForDraw5G8();
     ANTENNA_TYPE _currentAntenna = ANT_A;
     uint32_t _currentTimeMs = 0;
     WORK_MODE_TYPE _workMode = RECEIVER;
@@ -45,9 +44,5 @@ private:
     Scanner* _scanner5G8 = nullptr;
     TERRESTRIAL_STATE _state;
     VrxBackpackConfig* _config;
-    bool _isScalingCompleted = false;
-    double _scale1G2 = 1.0;
-    double _scale5G8 = 1.0;
-    uint8_t _preX1g2;
-    uint8_t _preX5g8;
+    TerrestrialCommand_t _currentCommand;
 };
