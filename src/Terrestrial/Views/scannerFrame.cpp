@@ -64,6 +64,14 @@ ScannerFrame::ScannerFrame(SCANNER_SETTINGS* dataModel)
 
 void ScannerFrame::SetActive(bool isActive)
 {
+    if (isActive)
+    {
+        ((EditBox*)_children[0])->UpdateValue(_dataModel->from);
+        ((EditBox*)_children[1])->UpdateValue(_dataModel->to);
+        ((EditBox*)_children[2])->UpdateValue(_dataModel->step);
+        ((EditBox*)_children[3])->UpdateValue(_dataModel->filter);
+    }
+
     _children[4]->SetVisibility(isActive);
     _children[5]->SetVisibility(isActive);
 

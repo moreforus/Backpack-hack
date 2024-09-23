@@ -62,7 +62,7 @@ RemoteConsole::ParseCommand(const std::string& command)
             
             // get :dddd:
             separatorPos = command.find(':', separatorPos1 + 1);
-            strncpy(tmp, buffer + separatorPos + 1, separatorPos - separatorPos1 - 1);
+            strncpy(tmp, buffer + separatorPos1 + 1, separatorPos - separatorPos1 - 1);
             tmp[separatorPos - separatorPos1 - 1] = 0;
             terrCommand.scannerFilter = atoi(tmp);
 
@@ -117,4 +117,3 @@ RemoteConsole::Loop()
         ++_pointer;
     }
 }
-
