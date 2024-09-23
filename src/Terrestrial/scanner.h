@@ -21,15 +21,17 @@ typedef void (*worker)(frequency_t);
 
 class Scanner {
 public:
-    Scanner(worker function, uint8_t rssiApin, uint8_t rssiBpin, uint8_t rssiDiff)
-    : _rssiApin(rssiApin), 
+    Scanner(worker function, uint8_t rssiApin, uint8_t rssiBpin, uint8_t rssiDiff, frequency_t minFreq, frequency_t maxFreq)
+    : MinFreq(minFreq),
+      MaxFreq(maxFreq),
+      _rssiApin(rssiApin), 
       _rssiBpin(rssiBpin),
       _rssiDiff(rssiDiff)
     {
         _worker = function;
     }
 
-    void Init(frequency_t minFreq, frequency_t maxFreq)
+    void SetBorders(frequency_t minFreq, frequency_t maxFreq)
     {
         _minFreq = minFreq;
         _maxFreq = maxFreq;
@@ -42,7 +44,11 @@ public:
 
     void SetFreq(uint16_t filterInitCounter)
     {
-        _worker(_scannerFreq);
+        if (_scannerFreq >= MinFreq && _scannerFreq <= MaxFreq)
+        {
+            _worker(_scannerFreq);
+        }
+    
         _filterInitCounter = filterInitCounter;
         _filter = filterInitCounter;
     }
@@ -59,8 +65,12 @@ public:
             return false;
         }
 
-        _rssiASum += analogRead(_rssiApin);
-        _rssiBSum += analogRead(_rssiBpin);
+        if (_scannerFreq >= MinFreq && _scannerFreq <= MaxFreq)
+        {
+            _rssiASum += analogRead(_rssiApin);
+            _rssiBSum += analogRead(_rssiBpin);
+        }
+
         if (--_filter == 0)
         {
             _rssiA = _rssiASum / _filterInitCounter;
@@ -69,7 +79,7 @@ public:
             if (_rssiA >= _rssiB)
             {
                 _currentAntenna = ANT_A;
-                if (_scannerRssiState.rssiMax < _rssiA)
+                if (_scannerRssiState.rssiMax <= _rssiA)
                 {
                     _scannerRssiState.rssiMax = _rssiA;
                     _scannerRssiState.freqForMaxValue = _scannerFreq;
@@ -79,7 +89,7 @@ public:
                 {
                     _scannerRssiState.rssiMin = _rssiB;
                 }*/
-                if (_rssiA < _scannerRssiState.rssiMin)
+                if (_rssiA <= _scannerRssiState.rssiMin)
                 {
                     _scannerRssiState.rssiMin = _rssiA;
                 }
@@ -87,13 +97,13 @@ public:
             else
             {
                 _currentAntenna = ANT_B;
-                if (_scannerRssiState.rssiMax < _rssiB)
+                if (_scannerRssiState.rssiMax <= _rssiB)
                 {
                     _scannerRssiState.rssiMax = _rssiB;
                     _scannerRssiState.freqForMaxValue = _scannerFreq;
                 }
 
-                if (_rssiA < _scannerRssiState.rssiMin)
+                if (_rssiA <= _scannerRssiState.rssiMin)
                 {
                     _scannerRssiState.rssiMin = _rssiA;
                 }
@@ -152,6 +162,8 @@ private:
     frequency_t _scannerFreq;
     frequency_t _minFreq;
     frequency_t _maxFreq;
+    const frequency_t MinFreq;
+    const frequency_t MaxFreq;
     uint16_t _rssiA = 0;
     uint16_t _rssiB = 0;
     uint16_t _filter = 0;

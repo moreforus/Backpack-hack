@@ -22,7 +22,7 @@ RemoteConsole::MakeMessage(const TerrestrialResponse_t& response)
     str += "[" + std::to_string(response.rssiA);
     str += ":" + std::to_string(response.rssiB);
     str += "]" + std::to_string(response.antenna);
-    str += ":" + std::to_string(us);
+    str += ">" + std::to_string(us);
     str += "\r\n";
     
     return str;

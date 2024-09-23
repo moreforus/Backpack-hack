@@ -27,9 +27,9 @@ private:
     void Work();
     void SetFreq(frequency_t freq);
     void SaveConfig();
-
     TerrestrialResponse_t Receive();
     TerrestrialResponse_t ScannerMeasure(Scanner* _scanner);
+
     ANTENNA_TYPE _currentAntenna = ANT_A;
     uint32_t _currentTimeMs = 0;
     WORK_MODE_TYPE _workMode = RECEIVER;

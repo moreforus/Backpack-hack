@@ -32,8 +32,8 @@ Terrestrial::Init()
 
     xTaskCreatePinnedToCore(consoleTask, "consoleTask", 5000, (void*)&_state, 1, NULL, 0);
 
-    _scanner1G2 = new Scanner(rtc6712SetFreq, RSSI_1G2_A, RSSI_1G2_B, RSSI_DIFF_BORDER);
-    _scanner5G8 = new Scanner(rtc6715SetFreq, RSSI_5G8_A, RSSI_5G8_B, RSSI_DIFF_BORDER);
+    _scanner1G2 = new Scanner(rtc6712SetFreq, RSSI_1G2_A, RSSI_1G2_B, RSSI_DIFF_BORDER, MIN_1G2_FREQ, MAX_1G2_FREQ);
+    _scanner5G8 = new Scanner(rtc6715SetFreq, RSSI_5G8_A, RSSI_5G8_B, RSSI_DIFF_BORDER, MIN_5G8_FREQ, MAX_5G8_FREQ);
     _receiver = new Receiver(RSSI_1G2_A, RSSI_1G2_B, RSSI_5G8_A, RSSI_5G8_B, RSSI_DIFF_BORDER);
     _receiver->SetFreq(_state.receiver.currentFreq);
     
@@ -158,8 +158,8 @@ Terrestrial::Work()
         switch (_scannerAuto)
         {
             case INIT:
-                _scanner1G2->Init(_minScanner1G2Freq, _maxScanner1G2Freq);
-                _scanner5G8->Init(_minScanner5G8Freq, _maxScanner5G8Freq);
+                _scanner1G2->SetBorders(_minScanner1G2Freq, _maxScanner1G2Freq);
+                _scanner5G8->SetBorders(_minScanner5G8Freq, _maxScanner5G8Freq);
                 _isScalingCompleted = false;
                 _scannerAuto = SET_FREQ_1G2;
             break;
@@ -192,16 +192,14 @@ Terrestrial::Work()
                             if (state1g2.rssiMin > state5g8.rssiMin)
                             {
                                 scale1G2 = (double)state5g8.rssiMin / state1g2.rssiMin;
-                                scale5G8 = 1.0;
                             }
                             else if (state1g2.rssiMin < state5g8.rssiMin)
                             {
                                 scale5G8 = (double)state1g2.rssiMin / state5g8.rssiMin;
-                                scale1G2 = 1.0;
                             }
 
-                            _state.scannerState.scale1G2 = scale1G2;
-                            _state.scannerState.scale5G8 = scale5G8;
+                            _state.scannerState.scale1G2 = scale1G2 > 0.0 ? scale1G2 : 1.0;
+                            _state.scannerState.scale5G8 = scale5G8 > 0.0 ? scale5G8 : 1.0;
                         }
 
                         _scanner1G2->ResetScannerRssiState();
@@ -303,7 +301,7 @@ Terrestrial::Loop(uint32_t now)
             _state.scanner.step = _scannerStep;
             _state.scanner.filter = _scannerFilter;
             SetWorkMode(cmd.work);
-            SaveConfig();            
+            SaveConfig();
         }
     }
 
