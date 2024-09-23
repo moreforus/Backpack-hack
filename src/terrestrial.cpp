@@ -6,6 +6,7 @@
 #include <lib_rtc6712.h>
 #include <common.h>
 #include "config.h"
+#include <Terrestrial/scanner.h>
 #include <Terrestrial/consoleTask.h>
 #include <Terrestrial/receiversParam.h>
 #include <Terrestrial/receiver.h>

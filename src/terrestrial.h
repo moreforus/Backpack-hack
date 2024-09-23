@@ -1,13 +1,21 @@
 #pragma once
 #include "module_base.h"
 #include <Arduino.h>
-#include <Terrestrial/scanner.h>
 #include <Terrestrial/antennaType.h>
 #include <Terrestrial/DataModel/terrestrialState.h>
 #include <Terrestrial/workMode.h>
 
+enum SCANNER_AUTO_TYPE : uint8_t
+{
+    INIT = 0,
+    SET_FREQ_1G2,
+    SET_FREQ_5G8,
+    MEASURE,
+};
+
 class IConsole;
 class VrxBackpackConfig;
+class Scanner;
 class Receiver;
 class Terrestrial : public ModuleBase
 {

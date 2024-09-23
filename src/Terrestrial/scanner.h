@@ -2,14 +2,6 @@
 #include <Terrestrial/antennaType.h>
 #include <common.h>
 
-enum SCANNER_AUTO_TYPE : uint8_t
-{
-    INIT = 0,
-    SET_FREQ_1G2,
-    SET_FREQ_5G8,
-    MEASURE,
-};
-
 struct ScannerRssiState_t
 {
     uint16_t rssiMin;
