@@ -112,11 +112,11 @@ void rtc6715SetFreq(frequency_t freq)
 {
     uint16_t newFreq = (freq - 479) / 2;
     uint32_t data = ((newFreq / 32) << 7) | (newFreq % 32);
-    uint32_t newRegisterData = SYNTHESIZER_REG_B  | (RX5808_WRITE_CTRL_BIT << 4) | (data << 5);
+    uint32_t newRegisterData = SYNTHESIZER_REG_B | (RX5808_WRITE_CTRL_BIT << 4) | (data << 5);
     //uint32_t currentRegisterData = SYNTHESIZER_REG_B | (RX5808_WRITE_CTRL_BIT << 4) | rtc6715readRegister(SYNTHESIZER_REG_B);
     //if (newRegisterData != currentRegisterData)
     {
-        rtc6715WriteRegister(SYNTHESIZER_REG_A  | (RX5808_WRITE_CTRL_BIT << 4) | (0x8 << 5));
+        rtc6715WriteRegister(SYNTHESIZER_REG_A | (RX5808_WRITE_CTRL_BIT << 4) | (0x8 << 5));
         rtc6715WriteRegister(newRegisterData);
     }
 }

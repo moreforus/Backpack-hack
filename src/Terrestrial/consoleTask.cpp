@@ -1,5 +1,4 @@
 #include <Terrestrial/consoleTask.h>
-#include <string>
 #include <Terrestrial/remoteConsole.h>
 #include <Terrestrial/userConsole.h>
 #include <Terrestrial/workMode.h>
