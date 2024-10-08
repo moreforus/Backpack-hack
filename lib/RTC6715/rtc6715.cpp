@@ -25,7 +25,6 @@ static uint32_t rtc6715readRegister(uint8_t readRegister)
 {
     uint32_t buf = readRegister | (RX5808_READ_CTRL_BIT << 4);
     uint32_t registerData = 0;
-
     uint32_t periodMicroSec = 1;
 
     digitalWrite(PIN_5G8_CS, LOW);
@@ -108,15 +107,21 @@ static void rtc6715WriteRegister(uint32_t buf)
     delayMicroseconds(periodMicroSec);
 }
 
+static void rtc6715WriteRegister(uint8_t address, uint32_t data)
+{
+    rtc6715WriteRegister(address | (RX5808_WRITE_CTRL_BIT << 4) | (data << 5));
+}
+
 void rtc6715SetFreq(frequency_t freq)
 {
+    //rtc6715WriteRegister(POWER_DOWN_CONTROL_REGISTER, 0x10c13);
     uint16_t newFreq = (freq - 479) / 2;
     uint32_t data = ((newFreq / 32) << 7) | (newFreq % 32);
-    uint32_t newRegisterData = SYNTHESIZER_REG_B | (RX5808_WRITE_CTRL_BIT << 4) | (data << 5);
+    //uint32_t newRegisterData = SYNTHESIZER_REG_B | (RX5808_WRITE_CTRL_BIT << 4) | (data << 5);
     //uint32_t currentRegisterData = SYNTHESIZER_REG_B | (RX5808_WRITE_CTRL_BIT << 4) | rtc6715readRegister(SYNTHESIZER_REG_B);
     //if (newRegisterData != currentRegisterData)
     {
-        rtc6715WriteRegister(SYNTHESIZER_REG_A | (RX5808_WRITE_CTRL_BIT << 4) | (0x8 << 5));
-        rtc6715WriteRegister(newRegisterData);
+        rtc6715WriteRegister(SYNTHESIZER_REG_A, 0x8);
+        rtc6715WriteRegister(SYNTHESIZER_REG_B, data);
     }
 }
