@@ -9,13 +9,15 @@
 class Receiver
 {
 public:
-    Receiver(uint8_t rssiA1G2pin, uint8_t rssiB1G2pin
-            , uint8_t rssiA5G8pin, uint8_t rssiB5G8pin
+    Receiver(uint8_t rssiA1G2pin, uint8_t rssiB1G2pin, uint8_t videoSelection1G2
+            , uint8_t rssiA5G8pin, uint8_t rssiB5G8pin, uint8_t videoSelection5G8
             , uint8_t rssiDiff)
-    : _rssiA1G2pin(rssiA1G2pin), 
+    : _rssiA1G2pin(rssiA1G2pin),
       _rssiB1G2pin(rssiB1G2pin),
+      _videoSelection1G2(videoSelection1G2),
       _rssiA5G8pin(rssiA5G8pin), 
       _rssiB5G8pin(rssiB5G8pin),
+      _videoSelection5G8(videoSelection5G8),
       _rssiDiff(rssiDiff)
     {
 
@@ -42,6 +44,18 @@ public:
         {
             rtc6712SetFreq(freq);
             _currentFreq = freq;
+        }
+    }
+
+    void SwitchVideo(ANTENNA_TYPE antenna)
+    {
+        if (_currentFreq >= MIN_5G8_FREQ)
+        {
+            digitalWrite(_videoSelection5G8, (antenna == ANT_A ? LOW : HIGH));
+        }
+        else if (_currentFreq < MAX_1G2_FREQ)
+        {
+            digitalWrite(_videoSelection1G2, (antenna == ANT_A ? LOW : HIGH));
         }
     }
 
@@ -90,8 +104,10 @@ public:
 private:
     const uint8_t _rssiA1G2pin;
     const uint8_t _rssiB1G2pin;
+    const uint8_t _videoSelection1G2;
     const uint8_t _rssiA5G8pin;
     const uint8_t _rssiB5G8pin;
+    const uint8_t _videoSelection5G8;
     const uint8_t _rssiDiff;
 
     frequency_t _currentFreq;

@@ -13,7 +13,6 @@ enum SCANNER_AUTO_TYPE : uint8_t
     MEASURE,
 };
 
-class IConsole;
 class VrxBackpackConfig;
 class Scanner;
 class Receiver;
@@ -30,7 +29,6 @@ public:
 
 private:
     void EnableSPIMode();
-    void SwitchVideo(ANTENNA_TYPE antenna);
     void SetWorkMode(WORK_MODE_TYPE mode);
     void Work();
     void SetFreq(frequency_t freq);

@@ -29,13 +29,14 @@ Terrestrial::Init()
     pinMode(PIN_CLK, INPUT);
     pinMode(PIN_5G8_CS, INPUT);
     pinMode(PIN_1G2_CS, INPUT);
-    pinMode(VIDEO_CTRL, OUTPUT);
+    pinMode(VIDEO_CTRL_5G8, OUTPUT);
+    pinMode(VIDEO_CTRL_1G2, OUTPUT);
 
     xTaskCreatePinnedToCore(consoleTask, "consoleTask", 5000, (void*)&_state, 1, NULL, 0);
 
     _scanner1G2 = new Scanner(rtc6712SetFreq, RSSI_1G2_A, RSSI_1G2_B, RSSI_DIFF_BORDER, MIN_1G2_FREQ, MAX_1G2_FREQ);
     _scanner5G8 = new Scanner(rtc6715SetFreq, RSSI_5G8_A, RSSI_5G8_B, RSSI_DIFF_BORDER, MIN_5G8_FREQ, MAX_5G8_FREQ);
-    _receiver = new Receiver(RSSI_1G2_A, RSSI_1G2_B, RSSI_5G8_A, RSSI_5G8_B, RSSI_DIFF_BORDER);
+    _receiver = new Receiver(RSSI_1G2_A, RSSI_1G2_B, VIDEO_CTRL_1G2, RSSI_5G8_A, RSSI_5G8_B, VIDEO_CTRL_5G8, RSSI_DIFF_BORDER);
     _receiver->SetFreq(_state.receiver.currentFreq);
     
     EnableSPIMode();
@@ -112,7 +113,7 @@ Terrestrial::Receive()
         if (antenna != _currentAntenna)
         {
             _currentAntenna = antenna;
-            SwitchVideo(_currentAntenna);
+            _receiver->SwitchVideo(_currentAntenna);
         }
 
         response.work = WORK_MODE_TYPE::RECEIVER;
@@ -318,10 +319,4 @@ Terrestrial::Loop(uint32_t now)
     uint8_t cpu = (micros() - usStart) / 10;
     _state.device.cpu1 = cpu > 100 ? 100 : cpu;
     _state.device.connectionState = connectionState;
-}
-
-void
-Terrestrial::SwitchVideo(ANTENNA_TYPE antenna)
-{
-    digitalWrite(VIDEO_CTRL, (antenna == ANT_A ? LOW : HIGH));
 }
