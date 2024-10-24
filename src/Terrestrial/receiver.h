@@ -6,19 +6,27 @@
 #include <Terrestrial/receiversParam.h>
 #include <Terrestrial/antennaType.h>
 
+struct RECEIVER_PARAMS {
+    uint8_t rssiA1G2pin;
+    uint8_t rssiB1G2pin;
+    uint8_t videoSelection1G2;
+    uint8_t rssiA5G8pin;
+    uint8_t rssiB5G8pin;
+    uint8_t videoSelection5G8;
+    uint8_t rssiDiff;
+};
+
 class Receiver
 {
 public:
-    Receiver(uint8_t rssiA1G2pin, uint8_t rssiB1G2pin, uint8_t videoSelection1G2
-            , uint8_t rssiA5G8pin, uint8_t rssiB5G8pin, uint8_t videoSelection5G8
-            , uint8_t rssiDiff)
-    : _rssiA1G2pin(rssiA1G2pin),
-      _rssiB1G2pin(rssiB1G2pin),
-      _videoSelection1G2(videoSelection1G2),
-      _rssiA5G8pin(rssiA5G8pin), 
-      _rssiB5G8pin(rssiB5G8pin),
-      _videoSelection5G8(videoSelection5G8),
-      _rssiDiff(rssiDiff)
+    Receiver(const RECEIVER_PARAMS& receiverParams)
+    : _rssiA1G2pin(receiverParams.rssiA1G2pin),
+      _rssiB1G2pin(receiverParams.rssiB1G2pin),
+      _videoSelection1G2(receiverParams.videoSelection1G2),
+      _rssiA5G8pin(receiverParams.rssiA5G8pin),
+      _rssiB5G8pin(receiverParams.rssiB5G8pin),
+      _videoSelection5G8(receiverParams.videoSelection5G8),
+      _rssiDiff(receiverParams.rssiDiff)
     {
 
     }

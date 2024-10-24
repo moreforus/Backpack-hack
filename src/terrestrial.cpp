@@ -34,9 +34,33 @@ Terrestrial::Init()
 
     xTaskCreatePinnedToCore(consoleTask, "consoleTask", 5000, (void*)&_state, 1, NULL, 0);
 
-    _scanner1G2 = new Scanner(rtc6712SetFreq, RSSI_1G2_A, RSSI_1G2_B, RSSI_DIFF_BORDER, MIN_1G2_FREQ, MAX_1G2_FREQ);
-    _scanner5G8 = new Scanner(rtc6715SetFreq, RSSI_5G8_A, RSSI_5G8_B, RSSI_DIFF_BORDER, MIN_5G8_FREQ, MAX_5G8_FREQ);
-    _receiver = new Receiver(RSSI_1G2_A, RSSI_1G2_B, VIDEO_CTRL_1G2, RSSI_5G8_A, RSSI_5G8_B, VIDEO_CTRL_5G8, RSSI_DIFF_BORDER);
+    SCANNER_PARAMS scanner1G2Params;
+    scanner1G2Params.function = rtc6712SetFreq;
+    scanner1G2Params.rssiApin = RSSI_1G2_A;
+    scanner1G2Params.rssiBpin = RSSI_1G2_B;
+    scanner1G2Params.rssiDiff = RSSI_DIFF_BORDER;
+    scanner1G2Params.minFreq = MIN_1G2_FREQ;
+    scanner1G2Params.maxFreq = MAX_1G2_FREQ;
+    _scanner1G2 = new Scanner(scanner1G2Params);
+
+    SCANNER_PARAMS scanner5G8Params;
+    scanner5G8Params.function = rtc6715SetFreq;
+    scanner5G8Params.rssiApin = RSSI_5G8_A;
+    scanner5G8Params.rssiBpin = RSSI_5G8_B;
+    scanner5G8Params.rssiDiff = RSSI_DIFF_BORDER;
+    scanner5G8Params.minFreq = MIN_5G8_FREQ;
+    scanner5G8Params.maxFreq = MAX_5G8_FREQ;
+    _scanner5G8 = new Scanner(scanner5G8Params);
+
+    RECEIVER_PARAMS receiverParams;
+    receiverParams.rssiA1G2pin = RSSI_1G2_A;
+    receiverParams.rssiB1G2pin = RSSI_1G2_B;
+    receiverParams.videoSelection1G2 = VIDEO_CTRL_1G2;
+    receiverParams.rssiA5G8pin = RSSI_5G8_A;
+    receiverParams.rssiB5G8pin = RSSI_5G8_B;
+    receiverParams.videoSelection5G8 = VIDEO_CTRL_5G8;
+    receiverParams.rssiDiff = RSSI_DIFF_BORDER;
+    _receiver = new Receiver(receiverParams);
     _receiver->SetFreq(_state.receiver.currentFreq);
     
     EnableSPIMode();

@@ -11,16 +11,25 @@ struct ScannerRssiState_t
 
 typedef void (*worker)(frequency_t);
 
+struct SCANNER_PARAMS {
+    worker function;
+    uint8_t rssiApin;
+    uint8_t rssiBpin;
+    uint8_t rssiDiff;
+    frequency_t minFreq;
+    frequency_t maxFreq;
+};
+
 class Scanner {
 public:
-    Scanner(worker function, uint8_t rssiApin, uint8_t rssiBpin, uint8_t rssiDiff, frequency_t minFreq, frequency_t maxFreq)
-    : MinFreq(minFreq),
-      MaxFreq(maxFreq),
-      _rssiApin(rssiApin), 
-      _rssiBpin(rssiBpin),
-      _rssiDiff(rssiDiff)
+    Scanner(const SCANNER_PARAMS& scannerParams)
+    : MinFreq(scannerParams.minFreq),
+      MaxFreq(scannerParams.maxFreq),
+      _rssiApin(scannerParams.rssiApin),
+      _rssiBpin(scannerParams.rssiBpin),
+      _rssiDiff(scannerParams.rssiDiff)
     {
-        _worker = function;
+        _worker = scannerParams.function;
     }
 
     void SetBorders(frequency_t minFreq, frequency_t maxFreq)
